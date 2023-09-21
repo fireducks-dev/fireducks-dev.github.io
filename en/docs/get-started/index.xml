@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Get Started on</title><link>/en/docs/get-started/</link><description>Recent content in Get Started on</description><generator>Hugo -- gohugo.io</generator><atom:link href="/en/docs/get-started/index.xml" rel="self" type="application/rss+xml"/><item><title>Get Started</title><link>/en/docs/get-started/get-started/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>/en/docs/get-started/get-started/</guid><description>FireDucks beta is released on pypi.org under the 3-Clause BSD License (the Modified BSD License).
+Install #
+pip install fireducks Usage #
+FireDucks provides two types of usage: Import Hook and Explicit Import.
+Import Hook #
+FireDucks provides a utility module fireducks.imhook. This module runs the given python script by automatically replacing import pandas statement with import fireducks.pandas. It is typically used with python interpreter's -m option as follows. This module enables you to use FireDucks for your existing program as it is.</description></item></channel></rss>
