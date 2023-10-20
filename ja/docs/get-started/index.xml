@@ -4,7 +4,7 @@ pip install fireducks 利用方法 #
 FireDucksにはふたつの利用方法があります．ひとつめはインポートフック，ふたつめは明示的なインポートです．
 インポートフック #
 FireDucksにはfireducks.imhookというユーティリティモジュールが含まれています．このユーティリティでは与えられたPythonスクリプト内のimport pandasを自動的にimport fireducksに置き換えて実行することができます．典型的には以下のようにPythonインタプリタの-mオプションに指定して使います．
-python -m fireducks.imhook your_script.py このユーティリティにより，既存のpandasプログラムを全く修正せずにFireDucksで動かすことができるため，多数のPythonスクリプトから構成されるプログラムを動かす場合に便利です．
+python3 -m fireducks.imhook your_script.py このユーティリティにより，既存のpandasプログラムを全く修正せずにFireDucksで動かすことができるため，多数のPythonスクリプトから構成されるプログラムを動かす場合に便利です．
 明示的なインポート #
 FireDucksには，pandasライクなモジュールfireducks.pandasが含まれており，pandasの代わりにインポートしてそのまま使用することができます．インポート文を以下のように変更してください．
 # import pandas as pd import fireducks.pandas as pd この方法はJupyterノートブックなどでFireDucksを使う場合に便利です．</description></item></channel></rss>

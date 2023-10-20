@@ -3,4 +3,4 @@ Install #
 pip install fireducks Usage #
 FireDucks provides two types of usage: Import Hook and Explicit Import.
 Import Hook #
-FireDucks provides a utility module fireducks.imhook. This module runs the given python script by automatically replacing import pandas statement with import fireducks.pandas. It is typically used with python interpreter's -m option as follows. This module enables you to use FireDucks for your existing program as it is.</description></item></channel></rss>
+FireDucks provides a utility module fireducks.imhook. This module runs the given Python script by automatically replacing import pandas statement with import fireducks.pandas. It is typically used with Python interpreter&amp;rsquo;s -m option as follows. This module enables you to use FireDucks for your existing program as it is.</description></item></channel></rss>
