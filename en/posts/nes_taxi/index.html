@@ -3,7 +3,7 @@
 <span class=toggle-dark><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></span><span class=toggle-light><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span></button><hr class="text-black-50 my-4 d-lg-none"><div class=dropdown><button class="btn btn-doks-light dropdown-toggle" id=doks-languages data-bs-toggle=dropdown aria-expanded=false data-bs-display=static>
 English
 <span class=dropdown-caret><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="dropdown-menu dropdown-menu-lg-end me-lg-2 shadow rounded border-0" aria-labelledby=doks-languages><li><a class="dropdown-item current" aria-current=true href=/en/posts/nes_taxi/>English</a></li><li><hr class=dropdown-divider></li><li><a class=dropdown-item rel=alternate href=/ja/posts/nes_taxi/ hreflang=ja lang=ja>Japanese</a></li></ul></div><a class="btn btn-primary mb-1" href=/en/docs/get-started/get-started/#install>Try for Free</a></div></div></nav></header></div><div class="wrap container-xxl" role=document><div class=content><article><div class="row justify-content-center"><div class="col-md-12 col-lg-12"><div class=blog-header><h1>Using Python's fast data frame library FireDucks</h1><p><small>Posted&nbsp;on&nbsp;October 23, 2023 by
-Yudai Morita</small></p></div></div><p><div class="col-md-12 col-lg-10 border border-primary border-2 mb-4">This article was written by Yudai Morita, who is engaged in data analysis at <a href=https://www.nec-solutioninnovators.co.jp/>NEC Solution Innovators, Ltd</a>.</div></p><div class="col-md-12 col-lg-12"><p>Pandas is a library that provides functions to support data analysis in the Python programming language.
+Yudai Morita</small></p></div></div><p><div class="col-md-12 col-lg-10 border border-primary border-2 mb-4">This article was written by Yudai Morita, who is engaged in data analysis at <a href=https://www.nec-solutioninnovators.co.jp/>NEC Solution Innovators, Ltd</a>.</div></p><div class="col-md-12 col-lg-12"><p>pandas is a library that provides functions to support data analysis in the Python programming language.
 NEC Research Laboratories has developed a library called FireDucks, a faster version of pandas.</p><h2 id=data-preparation>Data Preparation <a href=#data-preparation class=anchor aria-hidden=true>#</a></h2><p>The analysis is performed on the data of passenger history of cabs in New York City.
 The source of the data is as follows:</p><blockquote><p><a href=https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page>https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page</a></p></blockquote><p>To analyze large data sets, we downloaded and merged the &ldquo;Yellow Taxi Trip Records&rdquo; data from January 2022 to June 2023 from the above link.
 The data is provided in parquet format, but I converted it to csv format for testing.
@@ -11,7 +11,7 @@ A script for preparing the data is included for reference.</p><pre><code class=l
 import os
 
 dir = &quot;xxx&quot;
-df_list = [].
+df_list = []
 for year in [2022, 2023]: for i in range(12)
     for i in range(12): for i = str(i+1).zfill(2)
         month = str(i+1).zfill(2)
@@ -24,11 +24,11 @@ for year in [2022, 2023]: for i in range(12)
 
 all_df = pd.concat(df_list)
 all_df.to_csv(&quot;taxi_all.csv&quot;)
-</code></pre><p>The contents of the data contains the following values (some columns are excerpts).</p><table><thead><tr><th>column name</th><th><nobr>data type</nobr></th><th>description</th></tr></thead><tbody><tr><td><code>passenger_count</code></td><td>int</td><td>number of passengers</td></tr><tr><td><code>pu_location_Id</code></td><td>string</td><td>The TLC cab zone where the cab meter started working.</td></tr><tr><td><code>do_location_Id</code></td><td>string</td><td>The TLC cab zone where the cab meter was deactivated.</td></tr><tr><td><code>tpep_dropoff_datetime</code></td><td>string</td><td>The date and time the meter was deactivated.</td></tr><tr><td><code>tpep_pickupdate_time</code></td><td>string</td><td>The date and time when the meter started to work.</td></tr><tr><td><code>trip_distance</code></td><td>double</td><td>The trip distance (in miles) reported by the cab meter.</td></tr><tr><td>total_amount`</td><td>double</td><td>The total amount of money charged to the passenger. The total amount of money charged to the passenger, not including the cash tip.</td></tr><tr><td>extra`</td><td>double</td><td>Other surcharges and additional charges. Currently, this includes only the $0.50 and $1 rush hour and nighttime fares.</td></tr><tr><td>double</td><td>Time-and-distance combined fare calculated by the meter.</td><td>double</td></tr></tbody></table><h2 id=actual-preprocessing>Actual preprocessing <a href=#actual-preprocessing class=anchor aria-hidden=true>#</a></h2><p>A series of preprocessing calculations, such as type conversion, column addition, and outlier deletion, which are often used in data analysis, are performed on the prepared data.</p><p>First, prepare a wrapper for speed measurement.
+</code></pre><p>The contents of the data contains the following values (some columns are excerpts).</p><table><thead><tr><th>Column name</th><th><nobr>Data type</nobr></th><th>Description</th></tr></thead><tbody><tr><td><code>passenger_count</code></td><td>int</td><td>The number of passengers</td></tr><tr><td><code>pu_location_Id</code></td><td>string</td><td>The TLC cab zone where the cab meter started working.</td></tr><tr><td><code>do_location_Id</code></td><td>string</td><td>The TLC cab zone where the cab meter was deactivated.</td></tr><tr><td><code>tpep_dropoff_datetime</code></td><td>string</td><td>The date and time the meter was deactivated.</td></tr><tr><td><code>tpep_pickupdate_time</code></td><td>string</td><td>The date and time when the meter started to work.</td></tr><tr><td><code>trip_distance</code></td><td>double</td><td>The trip distance (in miles) reported by the cab meter.</td></tr><tr><td><code>total_amount</code></td><td>double</td><td>The total amount of money charged to the passenger, not including the cash tip.</td></tr><tr><td><code>extra</code></td><td>double</td><td>Other surcharges and additional charges. Currently, this includes only the $0.50 and $1 rush hour and nighttime fares.</td></tr><tr><td><code>fare_amount</code></td><td>double</td><td>Time-and-distance combined fare calculated by the meter.</td></tr></tbody></table><h2 id=actual-preprocessing>Actual preprocessing <a href=#actual-preprocessing class=anchor aria-hidden=true>#</a></h2><p>A series of preprocessing calculations, such as type conversion, column addition, and outlier deletion, which are often used in data analysis, are performed on the prepared data.</p><p>First, prepare a wrapper for speed measurement.
 <code>_evaluate()</code> is described later.</p><pre><code class=language-python>from time import time
 from functools import wraps
 
-def timer(func):.
+def timer(func):
     @wraps(func)
     def wp(*args, **kargs):
         t = time()
@@ -37,41 +37,41 @@ def timer(func):.
         return ret
     return wp
 
-def evaluate(df):.
+def evaluate(df):
     if hasattr(df, &quot;_evaluate&quot;):
-        df._evaluate().
+        df._evaluate()
 </code></pre><h3 id=loading-data>Loading data <a href=#loading-data class=anchor aria-hidden=true>#</a></h3><p>First, read the data.
 Import pandas and then use <code>read_csv</code> to read the data.
 Define a function, and call it later to measure the data.</p><pre><code class=language-python>import pandas as pd
 </code></pre><pre><code class=language-python>@timer
-def file_read(fn, args={}):.
+def file_read(fn, args={}):
     df = pd.read_csv(fn, **args)
     evaluate(df)
     print(df.shape)
     return df
-</code></pre><h3 id=data-processing>data processing <a href=#data-processing class=anchor aria-hidden=true>#</a></h3><p>remove data with missing values.</p><pre><code class=language-python>@timer
-def drop_na(df):.
+</code></pre><h3 id=data-processing>Data processing <a href=#data-processing class=anchor aria-hidden=true>#</a></h3><p>Remove data with missing values.</p><pre><code class=language-python>@timer
+def drop_na(df):
     df.dropna(how=&quot;all&quot;, inplace=True)
     evaluate(df)
     return df
 </code></pre><p>The date and time of boarding and alighting are read as strings, so they should be converted to dates.</p><pre><code class=language-python>@timer
-def txt_to_date(df, low):.
+def txt_to_date(df, low):
     df[low] = pd.to_datetime(df[low])
     evaluate(df)
     return df
 </code></pre><p>Let&rsquo;s look at the distribution grouped by the number of boardings (print is not included in the performance evaluation, so it is omitted).
-We see that there are data with zero riders, so we remove them.</p><pre><code class=language-python># At least one person on the train.
+We see that there are data with zero riders, so we remove them.</p><pre><code class=language-python># At least one person on the train
 @timer
-def check_passenger_c(df):.
+def check_passenger_c(df):
     df_ = df.groupby(&quot;passenger_count&quot;).size()
     evaluate(df_)
     df = df[df[&quot;passenger_count&quot;] &gt; 0]
     evaluate(df)
     return df
 </code></pre><p>Extract the year, month, day, and hour information from the ride date data and add columns.
-The distribution of the year and month of the ride contains incorrect values, so we remove them.</p><pre><code class=language-python># correct ride year/month.
+The distribution of the year and month of the ride contains incorrect values, so we remove them.</p><pre><code class=language-python># correct ride year/month
 @timer
-def check_pu_date(df):.
+def check_pu_date(df):
     df['year'] = df['tpep_pickup_datetime'].dt.year
     df['month'] = df['tpep_pickup_datetime'].dt.month
     df['date'] = df['tpep_pickup_datetime'].dt.day
@@ -92,38 +92,38 @@ def check_pu_date(df):.
 </code></pre><p>Convert the difference between the disembarkation time and the ride time to minutes and add a column.
 Remove non-positive or too long ride times.</p><pre><code class=language-python># realistic ride time in minutes
 @timer
-def check_ride_time(df):.
+def check_ride_time(df):
     df[&quot;ride_time&quot;] = (df[&quot;tpep_dropoff_datetime&quot;] - df[&quot;tpep_pickup_datetime&quot;]).dt.seconds / 60
     df = df[(df[&quot;ride_time&quot;] &gt; 0) &amp; (df[&quot;ride_time&quot;] &lt;= 180)]
     evaluate(df)
     return df
 </code></pre><p>Remove non-negative or too large values for ride distance and fare.</p><pre><code class=language-python># realistic distances
 @timer
-def check_trip_distance(df):.
+def check_trip_distance(df):
     df = df[(df[&quot;trip_distance&quot;] &gt; 0) &amp; (df[&quot;trip_distance&quot;] &lt;= 250)]
     evaluate(df)
     return df
 
 # Realistic fares
 @timer
-def check_total_amount(df):.
+def check_total_amount(df):
     df = df[(df[&quot;total_amount&quot;] &gt; 0) &amp; (df[&quot;total_amount&quot;] &lt;= 1000)]
     evaluate(df)
     return df
 </code></pre><p>Calculate the latitude and longitude from the IDs of the boarding and alighting points.
-The relationship between the ID and the point can be checked as follows: > &lt;+_zone> &lt;+_zone</p><blockquote><p><a href=https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv>https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv</a></p></blockquote><p>The latitude and longitude are calculated from</p><blockquote><p><a href=https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip>https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip</a></p></blockquote><p>The columns are added by merging the conversion table created based on > &lt;>.</p><p>Remove data outside New York City from the latitude and longitude information.</p><pre><code class=language-python># Find latitude and longitude from IDs.
+The relationship between the ID and the point can be checked as follows:</p><blockquote><p><a href=https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv>https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv</a></p></blockquote><p>The columns are added by merging the conversion table created based on the latitude and longitude calculated from:</p><blockquote><p><a href=https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip>https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip</a></p></blockquote><p>Remove data outside New York City from the latitude and longitude information.</p><pre><code class=language-python># Find latitude and longitude from IDs
 @timer
-def add_coordinate(df, ID_df):.
-    df = df.merge(ID_df.rename(columns={&quot;longitude&quot;: &quot;start_lon&quot;, &quot;latitude&quot;: &quot;start_lat&quot;}),.
+def add_coordinate(df, ID_df):
+    df = df.merge(ID_df.rename(columns={&quot;longitude&quot;: &quot;start_lon&quot;, &quot;latitude&quot;: &quot;start_lat&quot;}),
                   left_on=&quot;PULocationID&quot;, right_on=&quot;LocationID&quot;, how=&quot;left&quot;).drop(&quot;LocationID&quot;, axis=1)
-    df = df.merge(ID_df.rename(columns={&quot;longitude&quot;: &quot;end_lon&quot;, &quot;latitude&quot;: &quot;end_lat&quot;}),.
+    df = df.merge(ID_df.rename(columns={&quot;longitude&quot;: &quot;end_lon&quot;, &quot;latitude&quot;: &quot;end_lat&quot;}),
                   left_on=&quot;DOLocationID&quot;, right_on=&quot;LocationID&quot;, how=&quot;left&quot;).drop(&quot;LocationID&quot;, axis=1)
     evaluate(df)
     return df
 
 # Check if it is in NY
 @timer
-def in_NY(df):.
+def in_NY(df):
     df = df[(df[&quot;start_lon&quot;] &lt;= -71.47) &amp; (df[&quot;start_lon&quot;] &gt;= -79.45)]
     df = df[(df[&quot;start_lat&quot;] &gt;= 40.29) &amp; (df[&quot;start_lat&quot;] &lt;= 45)]
     df = df[(df[&quot;end_lon&quot;] &lt;= -71.47) &amp; (df[&quot;end_lon&quot;] &gt;= -79.45)]
@@ -131,22 +131,21 @@ def in_NY(df):.
     evaluate(df)
     return df
 
-def check_in_NY(df, ID_df):.
+def check_in_NY(df, ID_df):
     df = add_coordinate(df, ID_df)
     df = in_NY(df)
     return df
-</code></pre><p>As described above, a series of processes are prepared to read data, perform type conversion, add columns, and remove outlier values. 1.</p><ol><li>read the file</li><li>convert date data from string to date data
-3.Preprocessing<ol><li>remove missing values</li><li>check the number of passengers<ol><li>check distribution by groupby</li><li>select at least 1 passenger</li></ol></li><li>Check the time of boarding<ol><li>get the year, month, date and time from the date data and add a column 2. group by year and check → select only the relevant year</li><li>group by year and check → Select only the relevant year</li><li>group by month and check → select only Jan-Dec</li><li>group by year and month and check the distribution</li></ol></li><li>check the boarding time<ol><li>take the difference between the time of disembarkation and the time of embarkation, convert to minutes, and add a column (dt.total_second does not support FireDucks)</li><li>select realistic ride time data</li></ol></li><li>Check the ride distance<ol><li>Select realistic distance data (dt.total_second does not support FireDucks) 6.</li></ol></li><li>Check fare<ol><li>Select realistic fare data</li></ol></li><li>Select NY City data<ol><li>merge the passenger ID with the latitude and longitude table</li><li>select the data where the longitude and latitude of the boarding and alighting is in NY city</li></ol></li></ol></li></ol><h2 id=execution-time-in-pandas>Execution time in pandas <a href=#execution-time-in-pandas class=anchor aria-hidden=true>#</a></h2><p>First, let&rsquo;s check the execution time on pandas.
+</code></pre><p>As described above, a series of processes are prepared to read data, perform type conversion, add columns, and remove outlier values.</p><ol><li>Read the file</li><li>Convert date data from string to date data</li><li>Preprocessing<ol><li>Remove missing values</li><li>Check the number of passengers<ol><li>Check distribution by groupby</li><li>Select at least 1 passenger</li></ol></li><li>Check the time of boarding<ol><li>Tet the year, month, date and time from the date data and add a column</li><li>Group by year and check -> Select only the relevant year</li><li>Group by month and check -> select only Jan-Dec</li><li>Group by year and month and check the distribution</li></ol></li><li>Check the boarding time<ol><li>Take the difference between the time of disembarkation and the time of embarkation, convert to minutes, and add a column (<code>dt.total_second</code> is not supported by FireDucks)</li><li>Select realistic ride time data</li></ol></li><li>Check the ride distance<ol><li>Select realistic distance data</li></ol></li><li>Check fare<ol><li>Select realistic fare data</li></ol></li><li>Select NY City data<ol><li>Merge the passenger ID with the latitude and longitude table</li><li>Select the data where the longitude and latitude of the boarding and alighting is in NY city</li></ol></li></ol></li></ol><h2 id=execution-time-in-pandas>Execution time in pandas <a href=#execution-time-in-pandas class=anchor aria-hidden=true>#</a></h2><p>First, let&rsquo;s check the execution time on pandas.
 A 24-core Xeon server (Intel(R) Xeon(R) Gold 6226 CPU x 2, 256GB main memory) was used for the measurement.</p><pre><code class=language-python>import os
 data_path = &quot;data_sets&quot;
 fn = os.path.join(data_path, &quot;taxi_all.csv&quot;)
 ID_file = os.path.join(data_path, &quot;ID_to_coordinate.csv&quot;)
 
-need_cols = ['tpep_pickup_datetime','tpep_dropoff_datetime', 'passenger_count', 'trip_distance',.
+need_cols = ['tpep_pickup_datetime','tpep_dropoff_datetime', 'passenger_count', 'trip_distance',
 'PULocationID', 'DOLocationID', 'total_amount', 'improvement_surcharge', 'extra', 'fare_amount', 'RatecodeID']
 
 @timer
-def Preprocessing():.
+def Preprocessing():
     df = file_read(fn, {&quot;usecols&quot;: need_cols})
     ID_df = file_read(ID_file)
 
@@ -170,7 +169,7 @@ The execution time shows that it took more than one minute to read the file.
 In addition, <code>check_pu_date</code> and <code>add_coordinate</code>, which include adding columns and merge processing, take more than 30 seconds, and the implemented preprocessing takes 186 seconds to complete.</p><h2 id=execution-time-with-fireducks>Execution time with FireDucks <a href=#execution-time-with-fireducks class=anchor aria-hidden=true>#</a></h2><p>Measure the execution time when using FireDucks with the imported library replaced by pandas.</p><pre><code class=language-shell>pip install fireducks
 </code></pre><p>The above scripts for pandas preprocessing can be used as-is by importing FireDucks, since FireDucks is compatible with pandas.</p><pre><code class=language-python>import fireducks.pandas as pd
 </code></pre><p>Note that FireDucks does not immediately execute methods when they are called.
-Therefore, it is necessary to run <code>_evaluate()</code> to measure the execution time of each method.</p><p>The following table compares the execution time of FireDucks with that of pandas after importing FireDucks and performing the same preprocessing calculations.</p><table><thead><tr><th style=text-align:left>function</th><th style=text-align:right>pandas[sec]</th><th style=text-align:right>FireDucks[sec]</th><th style=text-align:right>speeduprate</th></tr></thead><tbody><tr><td style=text-align:left>file_read</td><td style=text-align:right>72.19</td><td style=text-align:right>3.52</td><td style=text-align:right>20.49</td></tr><tr><td style=text-align:left>file_read</td><td style=text-align:right>0.003</td><td style=text-align:right>0.01</td><td style=text-align:right>0.38</td></tr><tr><td style=text-align:left>txt_to_date</td><td style=text-align:right>9.07</td><td style=text-align:right>19.10</td><td style=text-align:right>0.48</td></tr><tr><td style=text-align:left>txt_to_date</td><td style=text-align:right>8.57</td><td style=text-align:right>20.57</td><td style=text-align:right>0.42</td></tr><tr><td style=text-align:left>drop_na</td><td style=text-align:right>3.13</td><td style=text-align:right>0.70</td><td style=text-align:right>4.47</td></tr><tr><td style=text-align:left>check_passenger_c</td><td style=text-align:right>3.21</td><td style=text-align:right>1.80</td><td style=text-align:right>1.79</td></tr><tr><td style=text-align:left>check_pu_date</td><td style=text-align:right>27.37</td><td style=text-align:right>0.99</td><td style=text-align:right>27.64</td></tr><tr><td style=text-align:left>check_ride_time</td><td style=text-align:right>7.02</td><td style=text-align:right>2.00</td><td style=text-align:right>3.51</td></tr><tr><td style=text-align:left>check_trip_distance</td><td style=text-align:right>3.24</td><td style=text-align:right>0.91</td><td style=text-align:right>3.55</td></tr><tr><td style=text-align:left>check_total_amount</td><td style=text-align:right>3.11</td><td style=text-align:right>0.93</td><td style=text-align:right>3.59</td></tr><tr><td style=text-align:left>check_total_amount</td><td style=text-align:right>3.11</td><td style=text-align:right>0.93</td><td style=text-align:right>3.59</td></tr><tr><td style=text-align:left>in_NY</td><td style=text-align:right>20.75</td><td style=text-align:right>2.71</td><td style=text-align:right>7.65</td></tr><tr><td style=text-align:left>Preprocessing</td><td style=text-align:right>186.02</td><td style=text-align:right>54.92</td><td style=text-align:right>3.39</td></tr></tbody></table><p>The <code>file_read</code> process took more than 70 seconds to complete in pandas, but it took about 3.5 seconds, which is more than 20 times faster.
+Therefore, it is necessary to run <code>_evaluate()</code> to measure the execution time of each method.</p><p>The following table compares the execution time of FireDucks with that of pandas after importing FireDucks and performing the same preprocessing calculations.</p><table><thead><tr><th style=text-align:left>Function</th><th style=text-align:right>pandas [sec]</th><th style=text-align:right>FireDucks [sec]</th><th style=text-align:right>Speed-up ratio</th></tr></thead><tbody><tr><td style=text-align:left><code>file_read</code></td><td style=text-align:right>72.19</td><td style=text-align:right>3.52</td><td style=text-align:right>20.49</td></tr><tr><td style=text-align:left><code>file_read</code></td><td style=text-align:right>0.003</td><td style=text-align:right>0.01</td><td style=text-align:right>0.38</td></tr><tr><td style=text-align:left><code>txt_to_date</code></td><td style=text-align:right>9.07</td><td style=text-align:right>19.10</td><td style=text-align:right>0.48</td></tr><tr><td style=text-align:left><code>txt_to_date</code></td><td style=text-align:right>8.57</td><td style=text-align:right>20.57</td><td style=text-align:right>0.42</td></tr><tr><td style=text-align:left><code>drop_na</code></td><td style=text-align:right>3.13</td><td style=text-align:right>0.70</td><td style=text-align:right>4.47</td></tr><tr><td style=text-align:left><code>check_passenger_c</code></td><td style=text-align:right>3.21</td><td style=text-align:right>1.80</td><td style=text-align:right>1.79</td></tr><tr><td style=text-align:left><code>check_pu_date</code></td><td style=text-align:right>27.37</td><td style=text-align:right>0.99</td><td style=text-align:right>27.64</td></tr><tr><td style=text-align:left><code>check_ride_time</code></td><td style=text-align:right>7.02</td><td style=text-align:right>2.00</td><td style=text-align:right>3.51</td></tr><tr><td style=text-align:left><code>check_trip_distance</code></td><td style=text-align:right>3.24</td><td style=text-align:right>0.91</td><td style=text-align:right>3.55</td></tr><tr><td style=text-align:left><code>check_total_amount</code></td><td style=text-align:right>3.11</td><td style=text-align:right>0.93</td><td style=text-align:right>3.59</td></tr><tr><td style=text-align:left><code>check_total_amount</code></td><td style=text-align:right>3.11</td><td style=text-align:right>0.93</td><td style=text-align:right>3.59</td></tr><tr><td style=text-align:left><code>in_NY</code></td><td style=text-align:right>20.75</td><td style=text-align:right>2.71</td><td style=text-align:right>7.65</td></tr><tr><td style=text-align:left><code>Preprocessing</code></td><td style=text-align:right>186.02</td><td style=text-align:right>54.92</td><td style=text-align:right>3.39</td></tr></tbody></table><p>The <code>file_read</code> process took more than 70 seconds to complete in pandas, but it took about 3.5 seconds, which is more than 20 times faster.
 Other time-consuming processes (<code>check_pu_date</code>, <code>add_coordinate</code>) were also significantly reduced.</p><p>The computation time for <code>txt_to_date</code> was increased by using FireDucks.
 This is because the <code>to_datetime()</code> function is not supported by FireDucks at the time of writing.
 However, even when a function like <code>to_datetime()</code> is called that does not support acceleration, FireDucks does not return an error because it performs the calculation by calling a pandas function.</p><p>The total computation time for the preprocessing calculations in this article was 55 seconds with FireDucks, compared to 186 seconds with pandas, which is about 3.4 times faster.
