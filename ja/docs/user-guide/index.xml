@@ -10,7 +10,10 @@ FireDucksで実際にデータフレームの処理が実行されるタイミ�
 時間計測について #
 FireDucksでは遅延実行が行われるため，もしメソッド単位で実際の処理の時間を計測したい場合はちょっとした工夫が必要です．
 例えば以下のように時間計測を行ったとしても，最後の計測区間（t3 - t2）にすべての処理の時間が含まれてしまいます．
-t0 = time.time() df = pd.read_csv(&amp;quot;data.csv&amp;quot;) t1 = time.time() df = df.sort_values(&amp;quot;a&amp;quot;) t2 = time.time() df.to_csv(&amp;quot;sorted.csv&amp;quot;) t3 = time.time() これを回避するためには，即座に処理を実行させるためのFireDucksの独自メソッド_evaluateを呼び出してください．
+t0 = time.time() df = pd.read_csv(&amp;quot;data.csv&amp;quot;) t1 = time.time() df = df.sort_values(&amp;quot;a&amp;quot;) t2 = time.time() df.to_csv(&amp;quot;sorted.csv&amp;quot;) t3 = time.time() バージョン0.9.1から、この目的のためにベンチマークモードが導入されました。 ベンチマークモードが有効な場合、FireDucksはメソッドが呼び出された直後にそのメソッドを実行します。 これはFireDucksのいくつかの最適化を無効にするため、個々のメソッドを測定したい場合にのみ使用してください。
+ベンチマークモードを有効にするには，以下のように環境変数を指定してください．
+FIREDUCKS_FLAGS=&amp;quot;--benchmark-mode&amp;quot; 以下のようにコード中から有効にすることも可能です．
+from fireducks.core import get_fireducks_options get_fireducks_options().set_benchmark_mode(True) 別の方法として，即座に処理を実行させるためのFireDucksの独自メソッド_evaluateを使うこともできます．
 t0 = time.time() df = pd.read_csv(&amp;quot;data.csv&amp;quot;)._evaluate() t1 = time.time() df = df.sort_values(&amp;quot;a&amp;quot;)._evaluate() t2 = time.time() df.to_csv(&amp;quot;sorted.csv&amp;quot;)._evaluate() t3 = time.time() ただし，このようにすると実行が細切れとなるため，FireDucksが複数の処理をまとめて最適化する機能が働きにくくなることに注意してください．そのため_evaluateの利用は個別のメソッドの時間計測を行う場合だけにしたほうが良いでしょう．</description></item><item><title>高速化の仕組み</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/03-acceleration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/03-acceleration/</guid><description>FireDucksの高速化の仕組みはふたつあります．ひとつめは中間言語上でのコンパイラ最適化，ふたつめはバックエンドによるマルチスレッド高速化です．
 コンパイラ最適化 #
 FireDucksでは実行時コンパイラの仕組みを使い，Pythonプログラムを中間言語に変換してから実行します．中間言語上での最適化とは，Pythonプログラムから変換された中間言語をそのまま実行するのではなく，プログラムの意味を変えない範囲で，より効率的に実行することができる計算方法に処理を変換することです．これは熟練者がプログラムを書くときに行うようなチューニングを自動で行うことに相当します．
