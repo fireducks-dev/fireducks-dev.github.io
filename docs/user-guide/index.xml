@@ -1,0 +1,170 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – User Guide</title><link>https://fireducks-dev.github.io/docs/user-guide/</link><description>Recent content in User Guide on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><atom:link href="https://fireducks-dev.github.io/docs/user-guide/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Introduction</title><link>https://fireducks-dev.github.io/docs/user-guide/01-intro/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/01-intro/</guid><description>
+&lt;p>FireDucks has the same API as in pandas, so you can refer to the pandas documentation and articles to get started, or you can use LLM to output pandas code and run it in FireDucks.&lt;/p>
+&lt;p>This user guide is intended for those who want to learn more about FireDucks, explaining its inner workings and what is useful to know about it. In particular, the following points may seem strange to those who are familiar with pandas.&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://fireducks-dev.github.io/docs/user-guide/02-exec-model/">Execution model&lt;/a>
+&lt;ul>
+&lt;li>For those who are used to pandas, the difference between the execution model of pandas and FireDucks may be a concern. In that case, please read &lt;a href="https://fireducks-dev.github.io/docs/user-guide/02-exec-model/">Execution Model&lt;/a>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;a href="https://fireducks-dev.github.io/docs/user-guide/04-compatibility/">pandas compatibility&lt;/a>
+&lt;ul>
+&lt;li>This section describes pandas compatibility from the perspective of compatibility, which is not the goal of FireDucks.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;a href="https://fireducks-dev.github.io/docs/user-guide/05-api/#pandas-conversion">Using external libraries&lt;/a>
+&lt;ul>
+&lt;li>Due to the incompatibility that FireDucks does not aim for, FireDucks data may not work when passed to a library that accepts pandas data. In such cases, the data can be converted to pandas data.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul></description></item><item><title>Docs: Execution Model</title><link>https://fireducks-dev.github.io/docs/user-guide/02-exec-model/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/02-exec-model/</guid><description>
+&lt;p>The execution model of FireDucks differs from that of pandas. pandas is an eager execution model in which the process is executed immediately upon method invocation, while FireDucks is a lazy execution model in which the process is executed in batches when the results are needed.&lt;/p>
+&lt;h2 id="lazy-execution-model">Lazy execution model&lt;/h2>
+&lt;p>The following figure shows the execution images of pandas and FireDucks.&lt;/p>
+&lt;p>&lt;img src="../exec_model.webp" alt="execution model">&lt;/p>
+&lt;p>In pandas, for example, calling the &lt;code>read_csv&lt;/code> method reads data from a CSV file. FireDucks, on the other hand, only generates an intermediate language equivalent to &lt;code>read_csv&lt;/code>, but does not read the data. Therefore, the line &lt;code>df = pd.read_csv(&amp;quot;data.csv&amp;quot;)&lt;/code> ends immediately in FireDucks.&lt;/p>
+&lt;p>Thus, the main methods of FireDucks do not actually process the data frame, but generate the intermediate language. Each time a method is called, more and more intermediate language is generated, and when the result is needed (e.g., when writing to a csv file), the previously generated intermediate language is executed all at once.&lt;/p>
+&lt;p>FireDucks performs actual execution at the following points&lt;/p>
+&lt;ul>
+&lt;li>Saving to a file (&lt;code>DataFrame.to_csv&lt;/code>, &lt;code>DataFrame.to_parquet&lt;/code>, etc.)&lt;/li>
+&lt;li>Displaying a data frame (&lt;code>print(df)&lt;/code>, etc.)&lt;/li>
+&lt;/ul>
+&lt;p>Because of these differences in execution models, those familiar with pandas may find that time-consuming methods finish in a fraction of a second, or that saving to a csv file takes longer than expected.&lt;/p>
+&lt;h2 id="about-time-measurement">About time measurement&lt;/h2>
+&lt;p>FireDucks performs delayed execution, so if you want to measure the actual processing time for each method, a little additional effort is required.&lt;/p>
+&lt;p>For example, if you insert timers are below, the last interval (&lt;code>t3 - t2&lt;/code>) will include the time of all processes.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>t0 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;data.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t2 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;sorted.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t3 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>From version 0.9.1, &lt;strong>benchmark mode&lt;/strong> has been introduced for this purpose.
+When bechmark mode is enabled, FireDucks actually executes a method immediately
+after it is called. Since this disables some optimizations of FireDucks, it
+should be used only when you want to measure individual methods.&lt;/p>
+&lt;p>To enable benchmark mode, please use environment variable:&lt;/p>
+&lt;pre tabindex="0">&lt;code>FIREDUCKS_FLAGS=&amp;#34;--benchmark-mode&amp;#34;
+&lt;/code>&lt;/pre>&lt;p>Or it can be enabled in a code as:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> fireducks.core &lt;span style="color:#f92672">import&lt;/span> get_fireducks_options
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>get_fireducks_options()&lt;span style="color:#f92672">.&lt;/span>set_benchmark_mode(&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The other workaround is calling FireDucks&amp;rsquo; own method &lt;a href="https://fireducks-dev.github.io/docs/user-guide/05-api/#_evaluate">&lt;code>_evaluate&lt;/code>&lt;/a> for immediate execution.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>t0 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;data.csv&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t2 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;sorted.csv&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t3 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Docs: Acceleration in FireDucks</title><link>https://fireducks-dev.github.io/docs/user-guide/03-acceleration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/03-acceleration/</guid><description>
+&lt;p>There are two mechanisms to accelerate FireDucks. The first is &lt;a href="#compiler-accelerated">compiler optimization&lt;/a> on the IR, intermediate representation, and the second is &lt;a href="#multithreaded">multithreading&lt;/a> on the backend.&lt;/p>
+&lt;h3 id="compiler-accelerated">Compiler Optimization&lt;/h3>
+&lt;p>FireDucks uses a runtime compiler mechanism to convert Python programs into an intermediate language before execution. Optimization on the intermediate language means that the Python program is converted to an intermediate language that can be executed faster without changing the meaning of the program, rather than being executed as-is. This is equivalent to automatically performing the kind of tuning that a skilled programmer would perform when writing a program.&lt;/p>
+&lt;p>The FireDucks intermediate language is an intermediate language designed specifically for DataFrames, and each instruction in the intermediate language is a highly abstract, information-rich instruction that represents an operation on a DataFrame. Therefore, the FireDucks compiler can understand the meaning of a program without complicated program analysis and can perform optimization specific to DataFrame.&lt;/p>
+&lt;h4 id="examples-of-optimizations">Examples of Optimizations&lt;/h4>
+&lt;p>Here is an example of such optimization. The following program extracts rows from a DataFrame in which column a is greater than 10, and then extracts column b from that row.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>selected &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">10&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This is a commonly used process, and the code looks straightforward. However, the process of extracting the first row covers all columns, which is not efficient if df has more columns than just a and b. Because DataFrames generally use column-oriented data structures, the process of extracting a specific row is a much more time-consuming process than extracting a column, and doing so for all columns may result in non-negligible overhead.&lt;/p>
+&lt;p>FireDucks optimization uses such domain knowledge to transform the intermediate language so that column extraction is performed first. The transformed process, written in Python, looks like the following code.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>tmp &lt;span style="color:#f92672">=&lt;/span> df[[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>selected &lt;span style="color:#f92672">=&lt;/span> tmp[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">10&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>While skilled users who are aware of DataFrame&amp;rsquo;s internal data structures will prefer code like this, FireDucks performs this acceleration as an optimization on an intermediate language.&lt;/p>
+&lt;h3 id="multithreaded">Multithreading&lt;/h3>
+&lt;p>In FireDucks, the user API and its execution are completely independent of each other via an intermediate language. The backend executes the instructions of the intermediate language and has the ability to perform specific data structures and operations on data frames.&lt;/p>
+&lt;p>FireDucks allows the backend to be changed, for example, a backend tuned for multi-core, a backend using accelerators such as GPUs, etc., to match the target environment, thereby increasing speed. The backend can be changed by environment variables, allowing the user to switch backends without changing the user program at all.&lt;/p>
+&lt;p>FireDucks Beta includes a multi-threaded backend for CPUs. This backend uses Apache Arrow as the data structure and adds its own parallelization in addition to the data frame operations provided by Apache Arrow.&lt;/p></description></item><item><title>Docs: pandas compatibility</title><link>https://fireducks-dev.github.io/docs/user-guide/04-compatibility/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/04-compatibility/</guid><description>
+&lt;p>FireDucks provides the same API (class names, method names, and attribute names) as pandas, and aims for compatibility in terms of being able to use it simply by changing import statements.&lt;/p>
+&lt;h2 id="compatibility-concept">Compatibility Concept&lt;/h2>
+&lt;p>We do &lt;em>not&lt;/em> aim for compatibility in the following aspects.&lt;/p>
+&lt;ul>
+&lt;li>Complete consistency of class names
+&lt;ul>
+&lt;li>FireDucks provides a pandas-compatible API in the module &lt;code>fireducks.pandas&lt;/code>. The complete class names, including module names, are different from those of pandas.&lt;/li>
+&lt;li>For example, the data frame type is &lt;code>pandas.DataFrame&lt;/code> in pandas, but &lt;code>fireducks.pandas.DataFrame&lt;/code> in FireDucks, which are not exactly the same. Therefore, an explicit test for a pandas DataFrame, such as &lt;code>isinstance(df, pandas.DataFrame)&lt;/code>, will be false. True for &lt;code>import fireducks.pandas as pd; isinstance(df, pd.DataFrame)&lt;/code>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Full compatibility of errors and warnings
+&lt;ul>
+&lt;li>Because of delayed execution, the timing of errors and warnings in FireDucks is different from that in pandas.&lt;/li>
+&lt;li>It is not the goal to match error messages (although the goal is to match Exception classes).&lt;/li>
+&lt;li>In addition, since Warnings may not be necessary in FireDucks, whether or not a Warning is generated may not match pandas.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Complete reproduction of undefined behavior and bugs in pandas.
+&lt;ul>
+&lt;li>We do not aim to reproduce the implementation-dependent behavior of pandas.&lt;/li>
+&lt;li>In particular, it may be undefined whether pandas returns a copy or a reference, and we do not recommend writing code that depends on either (&lt;a href="https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#why-does-assignment-fail-when-using-chained-indexing">reference&lt;/a>).&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>pandas internal API and Experimental features
+&lt;ul>
+&lt;li>We do not aim to provide methods that begin with an underscore (&lt;code>_&lt;/code>) or features that are marked as Experimental in the pandas documentation.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Extending pandas
+&lt;ul>
+&lt;li>Functions that extend pandas as described in &lt;a href="https://pandas.pydata.org/docs/development/extending.html">Extending pandas&lt;/a> are currently not targeted.&lt;/li>
+&lt;li>These include the ability to create subclasses of DataFrames and Series, and the ability to define your own data types.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Consistency of the order of merge/join result rows with pandas
+&lt;ul>
+&lt;li>The order of rows in merge/join results may not match the order in pandas. Sorting will match.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="use-with-pandas">Use with pandas&lt;/h2>
+&lt;p>The internal API and &lt;code>isinstance&lt;/code> are frequently used in pandas. Therefore, &lt;strong>using FireDucks with pandas will not work in most cases.&lt;/strong> It is recommended to rewrite all import statements or use &lt;a href="https://fireducks-dev.github.io/docs/get-started/#import-hook">automatic conversion by import hook&lt;/a> to use FireDucks instead.&lt;/p>
+&lt;p>If for some reason you wish to use FireDucks with pandas or pass DataFrame or Series of FireDucks to a library that accepts those of pandas, please use the &lt;a href="https://fireducks-dev.github.io/docs/user-guide/05-api/#pandas-conversion">pandas conversion function&lt;/a>.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> somelib
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#f92672">...&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>somelib&lt;span style="color:#f92672">.&lt;/span>process_pandas_dataframe(df&lt;span style="color:#f92672">.&lt;/span>to_pandas())
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Docs: FireDucks Own API</title><link>https://fireducks-dev.github.io/docs/user-guide/05-api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/05-api/</guid><description>
+&lt;p>FireDucks has its own API that some pandas do not have. Here are some of them.&lt;/p>
+&lt;h3 id="pandas-conversion">pandas conversion&lt;/h3>
+&lt;p>FireDucks DataFrame/Series has a &lt;code>to_pandas&lt;/code> method that allows conversion to pandas data. This is useful, for example, when using an external library that accepts pandas data.&lt;/p>
+&lt;p>Also, &lt;code>fireducks.pandas.from_pandas&lt;/code> can be used to convert pandas DataFrames/Series to FireDucks.&lt;/p>
+&lt;h3 id="_evaluate">Explicit intermediate language execution&lt;/h3>
+&lt;p>FireDucks provides lazy execution. Lazy execution allows multiple APIs to be executed at once and is an important feature for speeding up the process through optimization on intermediate languages.&lt;/p>
+&lt;p>On the other hand, when you want to measure the execution time of individual APIs, such as when verifying the operation of FireDucks, you will need to be creative; most APIs in FireDucks only generate an intermediate language, so they are completed in a very short time, and measuring before and after API calls does not allow you to measure the actual data frame processing time. Therefore, it is not possible to measure the actual data frame processing time by measuring the time before and after the API call.&lt;/p>
+&lt;p>In such cases, the &lt;code>DataFrame._evaluate&lt;/code> method can be used to explicitly execute the API. When &lt;code>_evaluate&lt;/code> is called, it executes the intermediate language for the DataFrame that has been created up to that point in time. Therefore, by calling &lt;code>_evaluate&lt;/code> before and after the process you want to measure, you can measure the actual processing time.&lt;/p>
+&lt;p>An example of groupby time measurement is shown below.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#f92672">...&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate() &lt;span style="color:#75715e"># end read_csv so that it is not in the measurement range&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t0 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time() &lt;span style="color:#75715e"># start measuring time&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>g &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#f92672">...&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>sum()&lt;span style="color:#f92672">.&lt;/span>_evaluate() &lt;span style="color:#75715e"># immediately after generating intermediate language for groupby&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time() &lt;span style="color:#75715e"># end of time measurement&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="api-for-feature-generation">API for feature generation&lt;/h3>
+&lt;p>One of the applications of data frames is feature generation, which is a pre-processing step in machine learning. In feature generation, data frames are processed in various ways to generate features for training in order to create better models, which can be very time-consuming.&lt;/p>
+&lt;p>FireDucks also provides an API for fast feature generation. Currently, the following two features are typical feature generation methods. These features can be implemented using a combination of pandas APIs, but FireDucks provides them as APIs, and they are preoptimized to be fast, just as the FireDucks compiler does. See the API Doc for details on each API.&lt;/p>
+&lt;ul>
+&lt;li>Aggregate features: &lt;code>fireducks.pandas.aggregate&lt;/code>&lt;/li>
+&lt;li>multi-target encoding: &lt;code>fireducks.pandas.multi_target_encoding&lt;/code>&lt;/li>
+&lt;/ul></description></item><item><title>Docs: Tips</title><link>https://fireducks-dev.github.io/docs/user-guide/tips/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/tips/</guid><description>
+&lt;p>The know-how of pandas, such as avoiding loops and apply, is also useful for FireDucks. Here are some tips to improve performance in FireDucks.&lt;/p>
+&lt;h2 id="avoid-loops">Avoid loops&lt;/h2>
+&lt;p>Looping out data from a DataFrame is slow, so it is better to use the DataFrame API as much as possible (this is also true for pandas).&lt;/p>
+&lt;p>For example, the following loop processes the elements of a Series one by one.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(len(df)): &lt;span style="color:#66d9ef">if&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>][i] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>: s &lt;span style="color:#f92672">+=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>][i] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> s &lt;span style="color:#f92672">+=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>][i]&lt;span style="color:#f92672">.&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Using the API, you can write the following.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The same applies to &lt;code>Dataframe.iterrows&lt;/code> and so on.&lt;/p>
+&lt;h2 id="do-not-use-apply">Do not use apply&lt;/h2>
+&lt;p>Passing user-defined functions such as &lt;code>DataFrame.apply&lt;/code> is not currently supported by FireDucks&amp;rsquo; current optimizer that generates an intermediate language and compiles it.&lt;/p>
+&lt;h2 id="do-not-use-attribute-style-column-references">Do not use attribute-style column references&lt;/h2>
+&lt;p>Column references can be written as &lt;code>df[&amp;quot;A&amp;quot;]&lt;/code> or &lt;code>df.A&lt;/code>, but the latter may conflict with the original attributes of the DataFrame, so it is better to write &lt;code>df[&amp;quot;A&amp;quot;]&lt;/code> in bracket format.&lt;/p>
+&lt;p>In FireDucks, the &lt;code>df.A&lt;/code> format requires processing to determine whether &lt;code>A&lt;/code> is a column name or not, which may result in loss of compiler optimization.&lt;/p>
+&lt;h2 id="do-not-use-undefined-behavior-of-pandas">Do not use undefined behavior of pandas&lt;/h2>
+&lt;p>Whether &lt;code>df[&amp;quot;A&amp;quot;]&lt;/code> returns a reference or a copy in the following cases is undefined in pandas, but if it returns a copy, &lt;code>df&lt;/code> is not updated. In many cases this will not be the intended behavior.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>][&lt;span style="color:#ae81ff">1&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Such undefined behavior may work differently in FireDucks than in pandas, so what works in pandas may not work in FireDucks. It is better not to use undefined behavior.&lt;/p>
+&lt;p>In this example, it is safe to write the following. However, as mentioned above, element-by-element access is inefficient, so if another implementation is possible, it is better to use it.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>iloc[&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">0&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span> &lt;span style="color:#75715e"># if A is the first column&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="avoid-fallback">Avoid Fallback&lt;/h2>
+&lt;p>FireDucks has a feature called fallback that calls pandas internally. This is a feature to improve pandas compatibility by using pandas to perform functions not currently supported by FireDucks. On the other hand, this is a disadvantage in terms of execution time and memory usage, since it involves converting the FireDucks data structure to pandas, executing the pandas method, and then converting it to the FireDucks data structure again.&lt;/p>
+&lt;p>We are continuously working to reduce fallbacks, but it is also effective to improve performance by avoiding fallbacks in user programs. The environment variable &lt;code>FIREDUCKS_FLAGS=&amp;quot;-Wfallback&amp;quot;&lt;/code> can be used to log when fallbacks occur.&lt;/p></description></item></channel></rss>

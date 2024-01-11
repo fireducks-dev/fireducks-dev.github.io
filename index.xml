@@ -1,0 +1,448 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Sat, 16 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Import hooks: how to use FireDucks without modifying your programs</title><link>https://fireducks-dev.github.io/posts/importhook/</link><pubDate>Wed, 15 Nov 2023 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/importhook/</guid><description>
+&lt;p>This is Osamu Daido from the FireDucks development team.
+In today&amp;rsquo;s developers&amp;rsquo; blog, I would like to introduce the import hook feature of FireDucks.
+This feature enables you to use FireDucks without modifying your existing programs at all.&lt;/p>
+&lt;p>I&amp;rsquo;ll explain how to use hooks when running Python files on the command line and how to enable hooks in IPython or Jupyter Notebook.&lt;/p>
+&lt;h1 id="what-is-an-import-hook">What is an import hook?&lt;/h1>
+&lt;p>FireDucks behaves in the same way as the original pandas, so it&amp;rsquo;s easy to get started by simply modifying an import statement as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># import pandas as pd&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>However, even if it&amp;rsquo;s just a single line, finding and replacing import statements with FireDucks in your programs which use pandas may be annoying.
+Moreover, if you want to use FireDucks in a third-party library that works with pandas, it&amp;rsquo;s not practical to modify all import statements in that library.&lt;/p>
+&lt;p>As mentioned in &lt;a href="https://fireducks-dev.github.io/docs/get-started/#import-hook">Get Started&lt;/a>, FireDucks has a utility called an import hook.
+Please specify the following options for the Python interpreter when you run &lt;code>your_script.py&lt;/code> on the command line.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>python3 -m fireducks.imhook your_script.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>With this feature, &lt;code>fireducks.pandas&lt;/code> is imported instead of &lt;code>pandas&lt;/code> when the Python interpreter attempts to import &lt;code>pandas&lt;/code>.
+Keep in mind that this does not edit the source code of &lt;code>your_script.py&lt;/code>, but rather dynamically hacks the import process while executing the program.&lt;/p>
+&lt;h2 id="example-of-an-import-hook">Example of an import hook&lt;/h2>
+&lt;p>Let&amp;rsquo;s see it in action with a simple Python script, &lt;code>print_classname.py&lt;/code>, as shown below.
+This script outputs the repr string of the DataFrame class.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(pd&lt;span style="color:#f92672">.&lt;/span>DataFrame)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>If you run it normally, the output is as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ python3 print_classname.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;class &lt;span style="color:#e6db74">&amp;#39;pandas.core.frame.DataFrame&amp;#39;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>With the import hook, the output becomes different from the previous one, as follows! 🥳&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ python3 -m fireducks.imhook print_classname.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;class &lt;span style="color:#e6db74">&amp;#39;fireducks.pandas.frame.DataFrame&amp;#39;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>So, yes, you can use dataframes of FireDucks even though you haven&amp;rsquo;t edited the source code.&lt;/p>
+&lt;h2 id="limitations">Limitations&lt;/h2>
+&lt;h3 id="no-shebang-support">No shebang support&lt;/h3>
+&lt;p>Currently, execution by shebang (&lt;code>#!...&lt;/code>) is not supported.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#!/usr/bin/python3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(pd&lt;span style="color:#f92672">.&lt;/span>DataFrame)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>You cannot enable an import hook, as you cannot specify the &lt;code>-m&lt;/code> option for the Python interpreter (hmm, it&amp;rsquo;s of course).&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ chmod +x print_classname_shebang.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ ./print_classname_shebang.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;class &lt;span style="color:#e6db74">&amp;#39;pandas.core.frame.DataFrame&amp;#39;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="no-combination-with-other-executable-modules">No combination with other executable modules&lt;/h3>
+&lt;p>The import hook feature cannot be used concurrently with other tools invoked by the &lt;code>-m&lt;/code> option, as only one &lt;code>-m&lt;/code> option can be passed to the Python interpreter.&lt;/p>
+&lt;h3 id="no-subprocess-support">No subprocess support&lt;/h3>
+&lt;p>If you start a new Python process using the &lt;code>subprocess&lt;/code> module, the import hook settings are not inherited by that subprocess.&lt;/p>
+&lt;h1 id="how-to-use-import-hooks-in-jupyter-notebook">How to use import hooks in Jupyter Notebook&lt;/h1>
+&lt;p>The import hook feature is also available in Jupyter Notebook.
+Currently, however, you cannot specify an option when starting Jupyter, and you must activate a hook explicitly in the first cell of your notebook.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.importhook
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks&lt;span style="color:#f92672">.&lt;/span>importhook&lt;span style="color:#f92672">.&lt;/span>activate_hook(&lt;span style="color:#e6db74">&amp;#34;fireducks.pandas&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;pandas&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>There may not be much benefit to using import hooks if you&amp;rsquo;re just using pandas in your own notebook.
+On the other hand, import hooks also work with third-party libraries that use pandas, so it&amp;rsquo;s useful if you want to utilize such libraries in your notebook.&lt;/p>
+&lt;p>If you want to disable a hook, please call the following function.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>fireducks&lt;span style="color:#f92672">.&lt;/span>importhook&lt;span style="color:#f92672">.&lt;/span>deactivate_hook()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>However, if you mix dataframes from the original pandas with ones from FireDucks, you will likely encounter errors (probably with complicated and mysterious error messages).
+Basically, it is recommended to keep a hook enabled once you enable it.&lt;/p>
+&lt;h2 id="how-to-use-import-hooks-with-ipython-cli">How to use import hooks with IPython CLI&lt;/h2>
+&lt;p>With IPython, you can enable a hook manually in the same way as in Jupyter Notebook described above.
+Another option is to start the IPython CLI as follows (this is an example with bash):&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>python3 -m fireducks.imhook &lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#66d9ef">$(&lt;/span>which ipython&lt;span style="color:#66d9ef">)&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Well, it&amp;rsquo;s a bit of an unusual way, but it works!&lt;/p>
+&lt;h1 id="wrap-up">Wrap-up&lt;/h1>
+&lt;p>FireDucks is still under research and development, so you may face errors and problems if you switch from using pandas to FireDucks.
+We have been working on improving features of FireDucks every day since the release of the beta version.
+Your feedback, bug reports, and feature requests are welcome!
+Please see our &lt;a href="https://fireducks-dev.github.io/docs/help/contact/">contact information&lt;/a> for further details.&lt;/p>
+&lt;p>To sum up, I&amp;rsquo;ve shown you how to use FireDucks without modifying your existing programs at all.
+If you want to try FireDucks, please refer to &lt;a href="https://fireducks-dev.github.io/docs/get-started/">Get Started&lt;/a> and &lt;a href="https://fireducks-dev.github.io/docs/user-guide/01-intro/">User Guide&lt;/a> documents. For information on how much faster FireDucks is compared to pandas, please check out our &lt;a href="https://fireducks-dev.github.io/docs/benchmarks/">Benchmarks&lt;/a>.&lt;/p>
+&lt;p>May the Acceleration be with you,&lt;!-- raw HTML omitted -->
+FireDucks Development Team&lt;/p></description></item><item><title>Posts: Using Python's fast data frame library FireDucks</title><link>https://fireducks-dev.github.io/posts/nes_taxi/</link><pubDate>Mon, 23 Oct 2023 08:47:36 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/nes_taxi/</guid><description>
+&lt;p>pandas is a library that provides functions to support data analysis in the Python programming language.
+NEC Research Laboratories has developed a library called FireDucks, a faster version of pandas.&lt;/p>
+&lt;h2 id="data-preparation">Data Preparation&lt;/h2>
+&lt;p>The analysis is performed on the data of passenger history of cabs in New York City.
+The source of the data is as follows:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;a href="https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page">https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page&lt;/a>&lt;/p>
+&lt;/blockquote>
+&lt;p>To analyze large data sets, we downloaded and merged the &amp;ldquo;Yellow Taxi Trip Records&amp;rdquo; data from January 2022 to June 2023 from the above link.
+The data is provided in parquet format, but I converted it to csv format for testing.
+A script for preparing the data is included for reference.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> os
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>dir &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;xxx&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_list &lt;span style="color:#f92672">=&lt;/span> []
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> year &lt;span style="color:#f92672">in&lt;/span> [&lt;span style="color:#ae81ff">2022&lt;/span>, &lt;span style="color:#ae81ff">2023&lt;/span>]: &lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(&lt;span style="color:#ae81ff">12&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(&lt;span style="color:#ae81ff">12&lt;/span>): &lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">=&lt;/span> str(i&lt;span style="color:#f92672">+&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>zfill(&lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>month &lt;span style="color:#f92672">=&lt;/span> str(i&lt;span style="color:#f92672">+&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>zfill(&lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fn &lt;span style="color:#f92672">=&lt;/span> f &lt;span style="color:#e6db74">&amp;#34;yellow_tripdata_&lt;/span>&lt;span style="color:#e6db74">{year}&lt;/span>&lt;span style="color:#e6db74">-&lt;/span>&lt;span style="color:#e6db74">{month}&lt;/span>&lt;span style="color:#e6db74">.parquet&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>file &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(dir, fn)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>exists(file):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">continue&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(fn)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_list&lt;span style="color:#f92672">.&lt;/span>append(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>all_df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>concat(df_list)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>all_df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;taxi_all.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The contents of the data contains the following values (some columns are excerpts).&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Column name&lt;/th>
+&lt;th>&lt;!-- raw HTML omitted -->Data type&lt;!-- raw HTML omitted -->&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;code>passenger_count&lt;/code>&lt;/td>
+&lt;td>int&lt;/td>
+&lt;td>The number of passengers&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>pu_location_Id&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>The TLC cab zone where the cab meter started working.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>do_location_Id&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>The TLC cab zone where the cab meter was deactivated.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>tpep_dropoff_datetime&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>The date and time the meter was deactivated.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>tpep_pickupdate_time&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>The date and time when the meter started to work.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>trip_distance&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>The trip distance (in miles) reported by the cab meter.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>total_amount&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>The total amount of money charged to the passenger, not including the cash tip.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>extra&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>Other surcharges and additional charges. Currently, this includes only the $0.50 and $1 rush hour and nighttime fares.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>fare_amount&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>Time-and-distance combined fare calculated by the meter.&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="actual-preprocessing">Actual preprocessing&lt;/h2>
+&lt;p>A series of preprocessing calculations, such as type conversion, column addition, and outlier deletion, which are often used in data analysis, are performed on the prepared data.&lt;/p>
+&lt;p>First, prepare a wrapper for speed measurement.
+&lt;code>_evaluate()&lt;/code> is described later.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> time &lt;span style="color:#f92672">import&lt;/span> time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> functools &lt;span style="color:#f92672">import&lt;/span> wraps
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">timer&lt;/span>(func):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@wraps&lt;/span>(func)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">wp&lt;/span>(&lt;span style="color:#f92672">*&lt;/span>args, &lt;span style="color:#f92672">**&lt;/span>kargs):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t &lt;span style="color:#f92672">=&lt;/span> time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ret &lt;span style="color:#f92672">=&lt;/span> func(&lt;span style="color:#f92672">*&lt;/span>args, &lt;span style="color:#f92672">**&lt;/span>kargs)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(&lt;span style="color:#e6db74">f&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#e6db74">{&lt;/span>func&lt;span style="color:#f92672">.&lt;/span>__name__&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74"> : &lt;/span>&lt;span style="color:#e6db74">{&lt;/span>(time() &lt;span style="color:#f92672">-&lt;/span> t)&lt;span style="color:#e6db74">:&lt;/span>&lt;span style="color:#e6db74">.5g&lt;/span>&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74"> [sec]&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> ret
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> wp
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">evaluate&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">if&lt;/span> hasattr(df, &lt;span style="color:#e6db74">&amp;#34;_evaluate&amp;#34;&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="loading-data">Loading data&lt;/h3>
+&lt;p>First, read the data.
+Import pandas and then use &lt;code>read_csv&lt;/code> to read the data.
+Define a function, and call it later to measure the data.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">file_read&lt;/span>(fn, args&lt;span style="color:#f92672">=&lt;/span>{}):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(fn, &lt;span style="color:#f92672">**&lt;/span>args)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(df&lt;span style="color:#f92672">.&lt;/span>shape)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="data-processing">Data processing&lt;/h3>
+&lt;p>Remove data with missing values.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">drop_na&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>dropna(how&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;all&amp;#34;&lt;/span>, inplace&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The date and time of boarding and alighting are read as strings, so they should be converted to dates.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">txt_to_date&lt;/span>(df, low):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[low] &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>to_datetime(df[low])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Let&amp;rsquo;s look at the distribution grouped by the number of boardings (print is not included in the performance evaluation, so it is omitted).
+We see that there are data with zero riders, so we remove them.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># At least one person on the train&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_passenger_c&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;passenger_count&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;passenger_count&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Extract the year, month, day, and hour information from the ride date data and add columns.
+The distribution of the year and month of the ride contains incorrect values, so we remove them.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># correct ride year/month&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_pu_date&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;year&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>year
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;month&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>month
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;date&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>day
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;hour&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>hour
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;year&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#39;year&amp;#39;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">2022&lt;/span>) &lt;span style="color:#f92672">|&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#39;year&amp;#39;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">2023&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;month&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#39;month&amp;#39;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;month&amp;#39;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">12&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby([&lt;span style="color:#e6db74">&amp;#34;year&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;month&amp;#34;&lt;/span>])&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Convert the difference between the disembarkation time and the ride time to minutes and add a column.
+Remove non-positive or too long ride times.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># realistic ride time in minutes&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_ride_time&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;ride_time&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;tpep_dropoff_datetime&amp;#34;&lt;/span>] &lt;span style="color:#f92672">-&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;tpep_pickup_datetime&amp;#34;&lt;/span>])&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>seconds &lt;span style="color:#f92672">/&lt;/span> &lt;span style="color:#ae81ff">60&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;ride_time&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;ride_time&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">180&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Remove non-negative or too large values for ride distance and fare.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># realistic distances&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_trip_distance&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;trip_distance&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;trip_distance&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">250&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Realistic fares&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_total_amount&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;total_amount&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;total_amount&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">1000&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Calculate the latitude and longitude from the IDs of the boarding and alighting points.
+The relationship between the ID and the point can be checked as follows:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;a href="https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv">https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv&lt;/a>&lt;/p>
+&lt;/blockquote>
+&lt;p>The columns are added by merging the conversion table created based on the latitude and longitude calculated from:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;a href="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip">https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip&lt;/a>&lt;/p>
+&lt;/blockquote>
+&lt;p>Remove data outside New York City from the latitude and longitude information.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Find latitude and longitude from IDs&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">add_coordinate&lt;/span>(df, ID_df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>merge(ID_df&lt;span style="color:#f92672">.&lt;/span>rename(columns&lt;span style="color:#f92672">=&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;longitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;start_lon&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;latitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;start_lat&amp;#34;&lt;/span>}),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;PULocationID&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, how&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;left&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>drop(&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, axis&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>merge(ID_df&lt;span style="color:#f92672">.&lt;/span>rename(columns&lt;span style="color:#f92672">=&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;longitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;end_lon&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;latitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;end_lat&amp;#34;&lt;/span>}),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;DOLocationID&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, how&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;left&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>drop(&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, axis&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Check if it is in NY&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">in_NY&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;start_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">71.47&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;start_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">79.45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;start_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">40.29&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;start_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;end_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">71.47&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;end_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">79.45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;end_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">40.29&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;end_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_in_NY&lt;/span>(df, ID_df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> add_coordinate(df, ID_df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> in_NY(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>As described above, a series of processes are prepared to read data, perform type conversion, add columns, and remove outlier values.&lt;/p>
+&lt;ol>
+&lt;li>Read the file&lt;/li>
+&lt;li>Convert date data from string to date data&lt;/li>
+&lt;li>Preprocessing&lt;/li>
+&lt;li>Remove missing values&lt;/li>
+&lt;li>Check the number of passengers&lt;/li>
+&lt;li>Check distribution by groupby&lt;/li>
+&lt;li>Select at least 1 passenger&lt;/li>
+&lt;li>Check the time of boarding&lt;/li>
+&lt;li>Tet the year, month, date and time from the date data and add a column&lt;/li>
+&lt;li>Group by year and check -&amp;gt; Select only the relevant year&lt;/li>
+&lt;li>Group by month and check -&amp;gt; select only Jan-Dec&lt;/li>
+&lt;li>Group by year and month and check the distribution&lt;/li>
+&lt;li>Check the boarding time&lt;/li>
+&lt;li>Take the difference between the time of disembarkation and the time of embarkation, convert to minutes, and add a column (&lt;code>dt.total_second&lt;/code> is not supported by FireDucks)&lt;/li>
+&lt;li>Select realistic ride time data&lt;/li>
+&lt;li>Check the ride distance&lt;/li>
+&lt;li>Select realistic distance data&lt;/li>
+&lt;li>Check fare&lt;/li>
+&lt;li>Select realistic fare data&lt;/li>
+&lt;li>Select NY City data&lt;/li>
+&lt;li>Merge the passenger ID with the latitude and longitude table&lt;/li>
+&lt;li>Select the data where the longitude and latitude of the boarding and alighting is in NY city&lt;/li>
+&lt;/ol>
+&lt;h2 id="execution-time-in-pandas">Execution time in pandas&lt;/h2>
+&lt;p>First, let&amp;rsquo;s check the execution time on pandas.
+A 24-core Xeon server (Intel(R) Xeon(R) Gold 6226 CPU x 2, 256GB main memory) was used for the measurement.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> os
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>data_path &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;data_sets&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fn &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(data_path, &lt;span style="color:#e6db74">&amp;#34;taxi_all.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ID_file &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(data_path, &lt;span style="color:#e6db74">&amp;#34;ID_to_coordinate.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>need_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>,&lt;span style="color:#e6db74">&amp;#39;tpep_dropoff_datetime&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;passenger_count&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;trip_distance&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">&amp;#39;PULocationID&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;DOLocationID&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;total_amount&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;improvement_surcharge&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;extra&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;fare_amount&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;RatecodeID&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">Preprocessing&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> file_read(fn, {&lt;span style="color:#e6db74">&amp;#34;usecols&amp;#34;&lt;/span>: need_cols})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ID_df &lt;span style="color:#f92672">=&lt;/span> file_read(ID_file)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> txt_to_date(df, &lt;span style="color:#e6db74">&amp;#34;tpep_pickup_datetime&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> txt_to_date(df, &lt;span style="color:#e6db74">&amp;#34;tpep_dropoff_datetime&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> drop_na(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_passenger_c(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_pu_date(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_ride_time(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_trip_distance(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_total_amount(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_in_NY(df, ID_df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> Preprocessing()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Now, the execution time in pandas is as shown in the table below.
+The two &lt;code>file_read&lt;/code> files are due to reading the taxi data as well as the location data for merging, and the &lt;code>txt_to_date&lt;/code> file is due to converting the ride time and the drop-off time.
+The execution time shows that it took more than one minute to read the file.
+In addition, &lt;code>check_pu_date&lt;/code> and &lt;code>add_coordinate&lt;/code>, which include adding columns and merge processing, take more than 30 seconds, and the implemented preprocessing takes 186 seconds to complete.&lt;/p>
+&lt;h2 id="execution-time-with-fireducks">Execution time with FireDucks&lt;/h2>
+&lt;p>Measure the execution time when using FireDucks with the imported library replaced by pandas.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>pip install fireducks
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The above scripts for pandas preprocessing can be used as-is by importing FireDucks, since FireDucks is compatible with pandas.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Note that FireDucks does not immediately execute methods when they are called.
+Therefore, it is necessary to run &lt;code>_evaluate()&lt;/code> to measure the execution time of each method.&lt;/p>
+&lt;p>The following table compares the execution time of FireDucks with that of pandas after importing FireDucks and performing the same preprocessing calculations.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:left">Function&lt;/th>
+&lt;th style="text-align:right">pandas [sec]&lt;/th>
+&lt;th style="text-align:right">FireDucks [sec]&lt;/th>
+&lt;th style="text-align:right">Speed-up ratio&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>file_read&lt;/code>&lt;/td>
+&lt;td style="text-align:right">72.19&lt;/td>
+&lt;td style="text-align:right">3.52&lt;/td>
+&lt;td style="text-align:right">20.49&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>file_read&lt;/code>&lt;/td>
+&lt;td style="text-align:right">0.003&lt;/td>
+&lt;td style="text-align:right">0.01&lt;/td>
+&lt;td style="text-align:right">0.38&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>txt_to_date&lt;/code>&lt;/td>
+&lt;td style="text-align:right">9.07&lt;/td>
+&lt;td style="text-align:right">19.10&lt;/td>
+&lt;td style="text-align:right">0.48&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>txt_to_date&lt;/code>&lt;/td>
+&lt;td style="text-align:right">8.57&lt;/td>
+&lt;td style="text-align:right">20.57&lt;/td>
+&lt;td style="text-align:right">0.42&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>drop_na&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.13&lt;/td>
+&lt;td style="text-align:right">0.70&lt;/td>
+&lt;td style="text-align:right">4.47&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_passenger_c&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.21&lt;/td>
+&lt;td style="text-align:right">1.80&lt;/td>
+&lt;td style="text-align:right">1.79&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_pu_date&lt;/code>&lt;/td>
+&lt;td style="text-align:right">27.37&lt;/td>
+&lt;td style="text-align:right">0.99&lt;/td>
+&lt;td style="text-align:right">27.64&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_ride_time&lt;/code>&lt;/td>
+&lt;td style="text-align:right">7.02&lt;/td>
+&lt;td style="text-align:right">2.00&lt;/td>
+&lt;td style="text-align:right">3.51&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_trip_distance&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.24&lt;/td>
+&lt;td style="text-align:right">0.91&lt;/td>
+&lt;td style="text-align:right">3.55&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_total_amount&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.11&lt;/td>
+&lt;td style="text-align:right">0.93&lt;/td>
+&lt;td style="text-align:right">3.59&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_total_amount&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.11&lt;/td>
+&lt;td style="text-align:right">0.93&lt;/td>
+&lt;td style="text-align:right">3.59&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>in_NY&lt;/code>&lt;/td>
+&lt;td style="text-align:right">20.75&lt;/td>
+&lt;td style="text-align:right">2.71&lt;/td>
+&lt;td style="text-align:right">7.65&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>Preprocessing&lt;/code>&lt;/td>
+&lt;td style="text-align:right">186.02&lt;/td>
+&lt;td style="text-align:right">54.92&lt;/td>
+&lt;td style="text-align:right">3.39&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>The &lt;code>file_read&lt;/code> process took more than 70 seconds to complete in pandas, but it took about 3.5 seconds, which is more than 20 times faster.
+Other time-consuming processes (&lt;code>check_pu_date&lt;/code>, &lt;code>add_coordinate&lt;/code>) were also significantly reduced.&lt;/p>
+&lt;p>The computation time for &lt;code>txt_to_date&lt;/code> was increased by using FireDucks.
+This is because the &lt;code>to_datetime()&lt;/code> function is not supported by FireDucks at the time of writing.
+However, even when a function like &lt;code>to_datetime()&lt;/code> is called that does not support acceleration, FireDucks does not return an error because it performs the calculation by calling a pandas function.&lt;/p>
+&lt;p>The total computation time for the preprocessing calculations in this article was 55 seconds with FireDucks, compared to 186 seconds with pandas, which is about 3.4 times faster.
+Of the 55 seconds, about 40 seconds was for processing that had not yet been accelerated, and further acceleration is expected in the future.&lt;/p></description></item></channel></rss>

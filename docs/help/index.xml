@@ -1,0 +1,75 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Help</title><link>https://fireducks-dev.github.io/docs/help/</link><description>Recent content in Help on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><atom:link href="https://fireducks-dev.github.io/docs/help/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: FAQ</title><link>https://fireducks-dev.github.io/docs/help/faq/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/help/faq/</guid><description>
+&lt;ul>
+&lt;li>About the beta version
+&lt;ul>
+&lt;li>Is FireDucks beta available for free?
+&lt;ul>
+&lt;li>Yes&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Can I use FireDucks beta for commercial purposes?
+&lt;ul>
+&lt;li>Yes&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Is FireDucks beta OSS?
+&lt;ul>
+&lt;li>No&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>About the release to manufacturing (RTM) version
+&lt;ul>
+&lt;li>When will the RTM version of FireDucks be released?
+&lt;ul>
+&lt;li>Not determined yet&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>What will the license be applied for the RTM version of FireDucks?
+&lt;ul>
+&lt;li>Not determined yet&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>About supported platforms
+&lt;ul>
+&lt;li>FireDucks is currently available for Linux (&lt;code>manylinux&lt;/code>) on the x86_64 architecture.&lt;/li>
+&lt;li>We will support Windows etc. if many requests.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>About support
+&lt;ul>
+&lt;li>Is there support for FireDucks?
+&lt;ul>
+&lt;li>As far as we know, no organization offers paid support for FireDucks.&lt;/li>
+&lt;li>We are preparing a Discord server where the FireDucks development team and users discuss.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>I found a problem, who should I contact?
+&lt;ul>
+&lt;li>Please register &lt;a href="https://github.com/fireducks-dev/fireducks/issues">an issue on the GitHub repository&lt;/a>.&lt;/li>
+&lt;li>Or please email &lt;a href="mailto:contact@fireducks.jp.nec.com">mailto:contact@fireducks.jp.nec.com&lt;/a>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Can I send a request?
+&lt;ul>
+&lt;li>Of course! We may not be able to respond to all requests, but all requests are welcome. Please see &lt;a href="https://fireducks-dev.github.io/docs/help/contact/">contact information&lt;/a>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Where can I get release information for FireDucks?
+&lt;ul>
+&lt;li>Please use &lt;a href="https://pypi.org/help/#project-release-notifications">release notifications on pypi.org&lt;/a>.&lt;/li>
+&lt;li>We will also post announcements on &lt;a href="https://twitter.com/fireducksdev">X (Twitter)&lt;/a>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul></description></item><item><title>Docs: Contact</title><link>https://fireducks-dev.github.io/docs/help/contact/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/help/contact/</guid><description>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/issues">Issues on GitHub&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://twitter.com/fireducksdev">X (Twitter)&lt;/a>&lt;/li>
+&lt;li>Discord (preparing)&lt;/li>
+&lt;li>&lt;a href="mailto:contact@fireducks.jp.nec.com">E-mail&lt;/a>&lt;/li>
+&lt;/ul></description></item></channel></rss>

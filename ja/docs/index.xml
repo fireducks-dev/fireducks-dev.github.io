@@ -1,1 +1,291 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Docs on</title><link>https://fireducks-dev.github.io/ja/docs/</link><description>Recent content in Docs on</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://fireducks-dev.github.io/ja/docs/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Docs</title><link>https://fireducks-dev.github.io/ja/docs/</link><description>Recent content in Docs on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><atom:link href="https://fireducks-dev.github.io/ja/docs/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: イントロダクション</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/01-intro/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/01-intro/</guid><description>
+&lt;p>FireDucksはpandasと同じAPIを持っているため，pandasのドキュメントや解説記事に記載されている内容をそのまま利用することができます．LLMでpandasのコードを出力し，FireDucksで動かすこともできるでしょう．&lt;/p>
+&lt;p>このユーザーガイドではFireDucksをより詳しく知りたい方に向けて，内部の仕組みや知っておくと役立つことを解説します．特に以下の項目は，pandasに慣れた方が違和感を覚えそうなポイントです．&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/02-exec-model/">実行モデル&lt;/a>
+&lt;ul>
+&lt;li>pandasに慣れている方にとっては，pandasとFireDucksの実行モデルの違いが気になるかもしれません．「&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/02-exec-model/">実行モデル&lt;/a>」ではこの違いについて解説しています．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/04-compatibility/">pandas互換性&lt;/a>
+&lt;ul>
+&lt;li>FireDucksは大部分でpandasとの互換性を保っていますが，pandasとの完全な互換は目指さない方針を取っている部分もあります．「&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/04-compatibility/">pandas互換性&lt;/a>」では特にpandasとの互換性を捨てている部分に注目して解説しています．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/05-api/#pandas-conversion">外部ライブラリの利用&lt;/a>
+&lt;ul>
+&lt;li>上で述べたようにFireDucksにはpandasとの完全な互換は目指していない部分もあり，pandasのデータを受け取る別のライブラリにFireDucksのデータを渡すと動かない場合があります．そのような場合にはデータをpandasの形式に変換して問題を解決することができます．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul></description></item><item><title>Docs: 実行モデル</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/02-exec-model/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/02-exec-model/</guid><description>
+&lt;p>FireDucksの実行モデルはpandasと異なります．pandasはメソッドが呼び出されると即座にその処理が実行されるEager実行モデルですが，FireDucksは結果が必要となったときにまとめて処理が実行される遅延実行モデルです．&lt;/p>
+&lt;h2 id="遅延実行モデル">遅延実行モデル&lt;/h2>
+&lt;p>pandasとFireDucksの実行イメージは次の図のようになります．&lt;/p>
+&lt;p>&lt;img src="../exec_model.webp" alt="execution model">&lt;/p>
+&lt;p>pandasでは，例えば&lt;code>read_csv&lt;/code>メソッドを呼び出すとcsvファイルからデータが読み込まれます．一方，FireDucksでは&lt;code>read_csv&lt;/code>に相当する中間言語の生成が行われるだけで，データの実際の読み込みはまだ行われません．そのためFireDucksでは&lt;code>df = pd.read_csv(&amp;quot;data.csv&amp;quot;)&lt;/code>と書かれている行の実行は即座に終わったように見えます．&lt;/p>
+&lt;p>このようにFireDucksのほとんどのメソッドは，実際のデータフレームの処理を行うことはなく中間言語の生成だけを行います．メソッドを呼び出す度にどんどん中間言語が生成されていき，結果が必要になったとき（例えばcsvファイルに書き出すとき）に，それまでに生成された中間言語を一気に実行します．&lt;/p>
+&lt;p>FireDucksで実際にデータフレームの処理が実行されるタイミングとしては以下のような場合があります．&lt;/p>
+&lt;ul>
+&lt;li>ファイルへの保存（&lt;code>DataFrame.to_csv&lt;/code>や&lt;code>DataFrame.to_parquet&lt;/code>）&lt;/li>
+&lt;li>データフレームの表示（&lt;code>print(df)&lt;/code>など）&lt;/li>
+&lt;/ul>
+&lt;p>こういった実行モデルの違いがあるために，pandasに慣れている方にとっては，時間がかかるはずのメソッドが一瞬で終わったように見えたり，ファイルへの書き込みに普段より時間がかかるように感じられるかもしれません．&lt;/p>
+&lt;h2 id="about-time-measurement">時間計測について&lt;/h2>
+&lt;p>FireDucksでは遅延実行が行われるため，もしメソッド単位で実際の処理の時間を計測したい場合はちょっとした工夫が必要です．&lt;/p>
+&lt;p>例えば以下のように時間計測を行ったとしても，最後の計測区間（&lt;code>t3 - t2&lt;/code>）にすべての処理の時間が含まれてしまいます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>t0 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;data.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t2 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;sorted.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t3 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>バージョン0.9.1から、この目的のために&lt;strong>ベンチマークモード&lt;/strong>が導入されました。
+ベンチマークモードが有効な場合、FireDucksはメソッドが呼び出された直後にそのメソッドを実行します。
+これはFireDucksのいくつかの最適化を無効にするため、個々のメソッドを測定したい場合にのみ使用してください。&lt;/p>
+&lt;p>ベンチマークモードを有効にするには，以下のように環境変数を指定してください．&lt;/p>
+&lt;pre tabindex="0">&lt;code>FIREDUCKS_FLAGS=&amp;#34;--benchmark-mode&amp;#34;
+&lt;/code>&lt;/pre>&lt;p>以下のようにコード中から有効にすることも可能です．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> fireducks.core &lt;span style="color:#f92672">import&lt;/span> get_fireducks_options
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>get_fireducks_options()&lt;span style="color:#f92672">.&lt;/span>set_benchmark_mode(&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>別の方法として，即座に処理を実行させるためのFireDucksの独自メソッド&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/05-api/#_evaluate">&lt;code>_evaluate&lt;/code>&lt;/a>を使うこともできます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>t0 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;data.csv&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t2 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;sorted.csv&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t3 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>ただし，このようにすると実行が細切れとなるため，FireDucksが複数の処理をまとめて最適化する機能が働きにくくなることに注意してください．そのため&lt;code>_evaluate&lt;/code>の利用は個別のメソッドの時間計測を行う場合だけにしたほうが良いでしょう．&lt;/p></description></item><item><title>Docs: 高速化の仕組み</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/03-acceleration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/03-acceleration/</guid><description>
+&lt;p>FireDucksの高速化の仕組みはふたつあります．ひとつめは中間言語上での&lt;a href="#compiler-accelerated">コンパイラ最適化&lt;/a>，ふたつめはバックエンドによる&lt;a href="#multithreaded">マルチスレッド高速化&lt;/a>です．&lt;/p>
+&lt;h3 id="compiler-accelerated">コンパイラ最適化&lt;/h3>
+&lt;p>FireDucksでは実行時コンパイラの仕組みを使い，Pythonプログラムを中間言語に変換してから実行します．中間言語上での最適化とは，Pythonプログラムから変換された中間言語をそのまま実行するのではなく，プログラムの意味を変えない範囲で，より効率的に実行することができる計算方法に処理を変換することです．これは熟練者がプログラムを書くときに行うようなチューニングを自動で行うことに相当します．&lt;/p>
+&lt;p>FireDucksの中間言語はデータフレーム専用に設計されており，中間言語上の各命令は，データフレームに対する操作を表した抽象度が高く情報量の多い命令となっています．そのためFireDucksが搭載する実行時コンパイラは，プログラムの意味を俯瞰的に把握することができ，データフレーム処理に特化した最適化を行うことが可能なのです．&lt;/p>
+&lt;h4 id="最適化の例">最適化の例&lt;/h4>
+&lt;p>このような最適化の例をひとつ紹介します．以下のコードでは，データフレーム&lt;code>df&lt;/code>からa列の値が10より大きい行を取り出し，その後にb列を取り出しています．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>selected &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">10&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>よく使われる処理で，特に問題のないコードのように見えます．しかし，このとき行を抽出する処理は全列を対象にしており，もしデータフレームがa, b以外にも列を持っている場合は効率が良くありません．なぜならば，一般的にデータフレームでは列指向（column major）のデータ構造が用いられており，特定の行を抽出する処理は列を抽出する処理に比べて格段に時間がかかる処理であるためです．それを全ての列に対して行うことは，無視できないオーバーヘッドになることがあります．&lt;/p>
+&lt;p>FireDucksの最適化は，こういったデータフレーム処理に特化した知恵を用いて，列の抽出処理を先に行うように中間言語を変換します．変換後の処理をPythonで書くなら以下のようなコードになります．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>tmp &lt;span style="color:#f92672">=&lt;/span> df[[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>selected &lt;span style="color:#f92672">=&lt;/span> tmp[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">10&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>データフレームの内部構造を知る熟練者であれば，こちらのようなコードを好むでしょう．FireDucksは中間言語上での最適化としてこのような変換を自動で行います．&lt;/p>
+&lt;h3 id="multithreaded">マルチスレッド高速化&lt;/h3>
+&lt;p>FireDucksでは，ユーザーが利用するAPIとその実行は中間言語を境目として完全に独立しています．中間言語の命令の実行を担当する部分をバックエンドと呼び，バックエンドがデータフレームの具体的なデータ構造や演算を行う機能を持っています．&lt;/p>
+&lt;p>FireDucksはバックエンドを変更できるようになっており，例えばマルチコアCPU用にチューニングされたバックエンド，GPUなどのアクセラレーターを使ったバックエンドなどのように，ターゲット環境に合わせたバックエンドを利用することで高速化を行うことができます．また，バックエンドの変更は環境変数によって行うことができ，ユーザープログラムを全く変更せずにバックエンドを切り替えることができます．&lt;/p>
+&lt;p>FireDucksベータ版には，CPU用にマルチスレッド化されたバックエンドが含まれています．このバックエンドは，データ構造としてApache Arrowを採用し，Apache Arrowが提供するデータフレーム操作に加えて，独自の最適化を施した並列処理機能を備えています．&lt;/p></description></item><item><title>Docs: pandas互換性</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/04-compatibility/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/04-compatibility/</guid><description>
+&lt;p>FireDucksはpandasと同じAPI（クラス名やメソッド名，属性名）を提供し，インポート文の変更だけで利用できるという観点での互換性を目指しています．&lt;/p>
+&lt;h2 id="互換性の考え方">互換性の考え方&lt;/h2>
+&lt;p>以下のような観点での互換性は目指して&lt;em>いません&lt;/em>．&lt;/p>
+&lt;ul>
+&lt;li>クラス名の完全な一致
+&lt;ul>
+&lt;li>FireDucksは&lt;code>fireducks.pandas&lt;/code>というモジュールでpandas互換のAPIを提供します．モジュール名まで含めた完全なクラス名はpandasとは異なります．&lt;/li>
+&lt;li>例えばデータフレーム型は，pandasでは&lt;code>pandas.DataFrame&lt;/code>ですが，FireDucksでは&lt;code>fireducks.pandas.DataFrame&lt;/code>であり，完全には一致しません．そのため&lt;code>isinstance(df, pandas.DataFrame)&lt;/code>といったpandasのDataFrameであるか否かの明示的なテストはFalseを返します．&lt;code>import fireducks.pandas as pd; isinstance(df, pd.DataFrame)&lt;/code>であれば，Trueを返します．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>エラーやWarningの完全な互換性
+&lt;ul>
+&lt;li>FireDucksは&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/02-exec-model/">遅延実行&lt;/a>を行っているため，エラーやWarningが発生するタイミングがpandasとは異なります．&lt;/li>
+&lt;li>エラーメッセージを一致させることは目標としていません（Exceptionクラスの一致は目標としています）．&lt;/li>
+&lt;li>WarningはFireDucksでは不要な場合もあるため，Warningが発生するか否かそのものがpandasと異なる動作となる場合があります．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>未定義動作やバグの完全な再現
+&lt;ul>
+&lt;li>いわゆる未定義動作やバグは，環境によって，またpandasの内部実装によって結果が異なる場合があります．そのようなpandasの内部実装に依存した動作の再現は目標としていません．&lt;/li>
+&lt;li>特に，pandasではコピーを返すのか参照を返すのかが未定義な場合があり，どちらかに依存したコードを書くことはお薦めしません．&lt;a href="https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#why-does-assignment-fail-when-using-chained-indexing">Why does assignment fail when using chained indexing?&lt;/a> も参照してください．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>pandasの内部APIやExperimentalな機能
+&lt;ul>
+&lt;li>アンダースコア（&lt;code>_&lt;/code>）から始まるメソッドや，pandasのドキュメントでExperimentalとされている機能の提供は目標としていません．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>pandasを拡張する機能
+&lt;ul>
+&lt;li>&lt;a href="https://pandas.pydata.org/docs/development/extending.html">Extending pandas&lt;/a>で説明されているpandasを拡張する機能は現在のところ対象外です．&lt;/li>
+&lt;li>DataFrameやSeriesのサブクラスを作る機能や，ユーザー独自のデータ型を定義する機能などのことです．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>merge/join結果における行の順序のpandasとの一致
+&lt;ul>
+&lt;li>FireDucksでは処理速度を優先しているため，merge/joinの結果の行の順序はpandasと一致しない場合があります．必要に応じてソートしましょう．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="pandasとの併用">pandasとの併用&lt;/h2>
+&lt;p>pandasの内部では，上で述べた内部APIや&lt;code>isinstance&lt;/code>によるチェックが頻繁に使われています．したがって，&lt;strong>pandasとFireDucksの併用は大抵の場合うまく動きません．&lt;/strong> 全てのインポート文を書き換えるか，&lt;a href="https://fireducks-dev.github.io/ja/docs/get-started/#import-hook">インポートフックによる自動変換&lt;/a>を利用し，FireDucksに統一することをお薦めします．&lt;/p>
+&lt;p>何らかの理由でpandasと併用したり，pandasのDataFrameやSeriesを受け取るライブラリにpandasのデータとして渡したい場合には，&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/05-api/#pandas-conversion">pandasとの変換機能&lt;/a>を利用してください．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> somelib
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#f92672">...&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>somelib&lt;span style="color:#f92672">.&lt;/span>process_pandas_dataframe(df&lt;span style="color:#f92672">.&lt;/span>to_pandas())
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Docs: 独自API</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/05-api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/05-api/</guid><description>
+&lt;p>FireDucksはpandasにはない独自のAPIをいくつか備えています．&lt;/p>
+&lt;h3 id="pandas-conversion">pandasとの変換&lt;/h3>
+&lt;p>FireDucksのDataFrameやSeriesは&lt;code>to_pandas&lt;/code>メソッドを持っており，pandasのDataFrameやSeriesへ変換することができます．例えばpandasデータを受け取る外部ライブラリを利用する場合に便利です．&lt;/p>
+&lt;p>また，pandasのDataFrameやSeriesをFireDucksのものに変換するには，&lt;code>fireducks.pandas.from_pandas&lt;/code>が利用できます．&lt;/p>
+&lt;h3 id="_evaluate">明示的な中間言語の実行&lt;/h3>
+&lt;p>FireDucksは遅延実行を行います．遅延実行は複数のAPIをまとめて実行することを可能にし，中間言語上での最適化による高速化に重要な機能となっています．&lt;/p>
+&lt;p>しかし，FireDucksの動作検証として個別のAPIの実行時間を計測したい場合などには，ちょっとした工夫が必要となります．FireDucksでは，ほとんどのAPIは中間言語を生成するだけの処理であるためごく短時間で終わってしまい，APIコールの直前から直後までの時間を測ることでは実際のデータフレーム処理にかかっている時間を計測することができません．&lt;/p>
+&lt;p>このような場合は，明示的に実行を指示する&lt;code>DataFrame._evaluate&lt;/code>メソッドが利用できます．&lt;code>_evaluate&lt;/code>が呼ばれると，その時点までに作られたそのDataFrameに関する中間言語が強制的に実行されます．そのため，計測したい処理の前後で&lt;code>_evaluate&lt;/code>を呼ぶことで，実際の処理の時間が計測できます．&lt;/p>
+&lt;p>groupbyの処理時間を計測する例を以下に示します．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#f92672">...&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate() &lt;span style="color:#75715e"># read_csvが計測範囲に入らないように終わらせる&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t0 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time() &lt;span style="color:#75715e"># 時間計測開始&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>g &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#f92672">...&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>sum()&lt;span style="color:#f92672">.&lt;/span>_evaluate() &lt;span style="color:#75715e"># groupby用の中間言語を生成後，即座に実行&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time() &lt;span style="color:#75715e"># 時間計測終了&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="特徴量生成用api">特徴量生成用API&lt;/h3>
+&lt;p>データフレームの用途のひとつとして，機械学習の前処理である特徴量生成が挙げられます．より良いモデルを作成するには，往々にして，データフレームを様々な方法で加工して学習用の特徴量を生成する必要があり，処理時間が非常に長くなる場合があります．&lt;/p>
+&lt;p>FireDucksは特徴量生成を高速に行うためのAPIも提供しています．現在は代表的な特徴量生成手法である以下のふたつの機能があります．これらの機能はpandasのAPIを組み合わせて実装することができますが，FireDucksでは単一のAPIとして提供されており，独自のチューニングがあらかじめ施されているため高速です．各APIの詳細はAPI Docを参照してください．&lt;/p>
+&lt;ul>
+&lt;li>集約特徴量: &lt;code>fireducks.pandas.aggregate&lt;/code>&lt;/li>
+&lt;li>マルチターゲットエンコーディング: &lt;code>fireducks.pandas.multi_target_encoding&lt;/code>&lt;/li>
+&lt;/ul></description></item><item><title>Docs: Tips</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/tips/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/tips/</guid><description>
+&lt;p>ループやapplyメソッドを避けるといったpandasでのノウハウはFireDucksでも有効です．ここではFireDucksで性能を引き出すためのTipsを紹介します．&lt;/p>
+&lt;h2 id="ループを利用しない">ループを利用しない&lt;/h2>
+&lt;p>DataFrameやSeriesからループでデータを取り出しながら処理を行うと大きなオーバーヘッドが発生し，余計な時間がかかってしまいます．できる限りDataFrameやSeriesのAPIを組み合わせて記述しましょう（これはpandasでも同様です）．&lt;/p>
+&lt;p>例えば以下のループではDataFrameの要素をひとつずつ処理しています．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(len(df)):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>][i] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> s &lt;span style="color:#f92672">+=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>][i]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>これはDataFrameのAPIを用いると以下のように書き換えることができます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>DataFrameから一行ずつ取り出す&lt;code>Dataframe.iterrows&lt;/code>を用いた処理も同様です．&lt;/p>
+&lt;h2 id="applyメソッドを利用しない">applyメソッドを利用しない&lt;/h2>
+&lt;p>&lt;code>DataFrame.apply&lt;/code>などのユーザ定義関数を実行する処理は，FireDucksで中間言語を生成して実行時コンパイルを行うという最適化機能が現在対応できていません．今後の機能改善をお楽しみに．&lt;/p>
+&lt;h2 id="属性形式の列参照をしない">属性形式の列参照をしない&lt;/h2>
+&lt;p>列の参照は&lt;code>df[&amp;quot;A&amp;quot;]&lt;/code>や&lt;code>df.A&lt;/code>と書くこともできますが，後者はDataFrameに元々備わっている属性と競合する可能性があるため，&lt;code>df[&amp;quot;A&amp;quot;]&lt;/code>とカッコ形式で書いたほうが良いでしょう．&lt;/p>
+&lt;p>FireDucksでは，&lt;code>df.A&lt;/code>形式の場合は&lt;code>A&lt;/code>が列名かどうかを判断する処理が必要となり，コンパイラ最適化が働かなくなる可能性があります．&lt;/p>
+&lt;h2 id="pandasの未定義動作に依存しない">pandasの未定義動作に依存しない&lt;/h2>
+&lt;p>以下のような場合に&lt;code>df[&amp;quot;A&amp;quot;]&lt;/code>が参照を返すかコピーを返すかはpandasでは未定義ですが，もしコピーが返ってきている場合は&lt;code>df&lt;/code>は更新されません．多くの場合，これは意図した動作ではないでしょう．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>][&lt;span style="color:#ae81ff">1&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>FireDucksでは，このような未定義動作はpandasとは異なる結果となる可能性があるため，pandasでうまくいった場合でもFireDucksではうまくいかない場合があります．未定義動作に依存した処理を書くことはお薦めしません．&lt;/p>
+&lt;p>この例では以下のように書くと安全です．ただし，上で述べたように要素毎のアクセスは非効率なため，他の実装が可能であればそちらのほうが良いでしょう．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>iloc[&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">0&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span> &lt;span style="color:#75715e"># Aが最初の列の場合&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="フォールバックを避ける">フォールバックを避ける&lt;/h2>
+&lt;p>FireDucksはフォールバックという内部的にpandasを呼び出す機能を持っています．これは現在FireDucksがサポートしていない機能をpandasを使って実行するもので，pandasとの互換性を高めるための機能です．しかしフォールバックが発生すると，FireDucksのデータ構造を一度pandasのものに変換し，pandasのメソッドを実行して，再度FireDucksのデータ構造に変換するという処理が行われるため，実行時間やメモリ使用量の観点ではデメリットになります．&lt;/p>
+&lt;p>フォールバックの削減は継続的に行っていますが，ユーザープログラム側の工夫でフォールバックを回避することで性能向上を行うことも有効です．環境変数&lt;code>FIREDUCKS_FLAGS=&amp;quot;-Wfallback&amp;quot;&lt;/code>を設定することで，フォールバックが発生した場合にログを出力することが可能です．&lt;/p></description></item><item><title>Docs: 全業界のデータサイエンティスト</title><link>https://fireducks-dev.github.io/ja/docs/use-case/data-scientist/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/use-case/data-scientist/</guid><description>
+&lt;p>データサイエンティストは，大規模なデータを扱う際の煩雑さや待ち時間を最小化し，生産性を上げていきたいと思っているはずです．FireDucksを活用して，データサイエンティストとしてのあなたの価値を最大限に引き出しましょう．&lt;/p>
+&lt;h2 id="time-is-money">Time is Money&lt;/h2>
+&lt;p>年間約500時間もの待ち時間が生じるデータ前処理や分析作業．この時間を，他の重要な業務に割く時間や新しいプロジェクトに投資できる時間に変えることができます．&lt;/p>
+&lt;h2 id="スピーディーな仮説検証">スピーディーな仮説検証&lt;/h2>
+&lt;p>素早い分析サイクルで，効率的に意思決定を下すことができます．仮説の立案から検証，再検討までのサイクルをスムーズに回すことができるようになり，ビジネスのスピードが飛躍的に向上します．&lt;/p>
+&lt;h2 id="機械学習モデルの迅速な構築">機械学習モデルの迅速な構築&lt;/h2>
+&lt;p>FireDucksは特に特徴量作成の高速化に効果を発揮します．モデル構築のフェーズで強力なサポートが得られるようになるでしょう．&lt;/p>
+&lt;p>&lt;img src="../../../images/G-1313496084-640x360.webp" alt="data scientist">&lt;/p></description></item><item><title>Docs: 相性が高いユースケース</title><link>https://fireducks-dev.github.io/ja/docs/use-case/industries/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/use-case/industries/</guid><description>
+&lt;h2 id="automobile">自動車業界&lt;/h2>
+&lt;p>&lt;img src="../../../images/G-971246808-640x360.webp" alt="automobile">&lt;/p>
+&lt;p>近年の自動車には，私たちの走行履歴やブレーキの強度などの情報をリアルタイムで記録する技術が搭載されています．この情報のことを「プローブデータ」と呼びます．FireDucksとこれらのデータの活用によって以下のようなことを実現できます．&lt;/p>
+&lt;p>&lt;strong>気象予測&lt;/strong>：ワイパーや外気温のデータを活用し，予測モデルを構築．自動車業界のデータビジネスに革命をもたらします．&lt;/p>
+&lt;p>&lt;strong>マーケティング&lt;/strong>：周辺の駐車場の利用状況をもとに，新規出店の最適な場所を見つけるのに役立ちます．そして，マーケティングツールの処理速度の向上や，リアルタイムでのダッシュボード更新で，お客様の経験をより良くします．&lt;/p>
+&lt;p>&lt;strong>交通状況の改善&lt;/strong>：渋滞の現場や危険な場所を特定し，問題を解決するための提案に役立てることができます．急ブレーキの多い場所に標識を追加するなど，事故の予防も可能です．&lt;/p>
+&lt;p>ただし注意点として，極めて大規模なデータを複数のサーバーで同時に処理する用途には，現在のFireDucksの利用は制限されています．しかし，一度データを整理してから利用すれば，FireDucksの能力を最大限に発揮できるでしょう．これにより，上のような革新的な取り組みを効率良く，迅速に実現するサポートが得られます．&lt;/p>
+&lt;h2 id="telecom">通信業界&lt;/h2>
+&lt;p>&lt;img src="../../../images/G-1198489792-640x360.webp" alt="telecom">&lt;/p>
+&lt;p>FireDucksを活用すれば，今後もさらにその価値を増していくことが予想されている位置情報を駆使したビジネスの可能性を最大限に引き出すことができます．&lt;/p>
+&lt;p>&lt;strong>高速な位置情報処理&lt;/strong>：ユーザーの位置情報は，通信業界において多岐にわたるサービスや機能の提供に不可欠です．大量の位置情報をより迅速に処理することで，リアルタイム性を高めるとともに，サービスの質を向上させることができます．&lt;/p>
+&lt;p>&lt;strong>迅速なサービス応答&lt;/strong>：位置情報を元にしたサービスや情報提供が高速化されることで，エンドユーザーへのレスポンス時間が短縮．これにより，ユーザー満足度の向上や新たなビジネスチャンスの拡大が期待できます．&lt;/p>
+&lt;p>&lt;strong>エッジコンピューティングの最適化&lt;/strong>：位置情報をリアルタイムに処理することで，エッジコンピューティングのパフォーマンスを最適化．通信の遅延を減少させ，よりスムーズなサービス提供が可能となります．&lt;/p>
+&lt;p>&lt;strong>新しい位置情報サービスの開発&lt;/strong>：高速なデータ処理の恩恵を活かし，位置情報を活用した新たなサービスや機能の開発にも柔軟に対応できるようになります．これにより，市場のニーズに迅速に応えることができるようになります．&lt;/p>
+&lt;h2 id="finance">金融業界&lt;/h2>
+&lt;p>&lt;img src="../../../images/G-1269677040-640x360.webp" alt="finance">&lt;/p>
+&lt;p>FireDucksは信頼とスピードが求められる金融データ処理を，さらに効率的，より安全にするソリューションを提供します．&lt;/p>
+&lt;p>&lt;strong>複雑な金融データの高速処理&lt;/strong>：日々の取引データ，顧客情報，マーケットの動向など，膨大なデータの高速なバッチ集計は金融業界には必要不可欠です．FireDucksにより処理速度を飛躍的に向上させることが可能となります．&lt;/p>
+&lt;p>&lt;strong>安定したサービス提供&lt;/strong>：新規ユーザーの増加やマーケットの変動によるデータ処理の増大時でも，タイムアウトエラーのリスクを大幅に削減．お客様に対してより信頼性の高いサービスを提供することができます．&lt;/p>
+&lt;p>&lt;strong>効率的な後続業務への連携&lt;/strong>：処理の高速化により，後続の業務や他システムへのデータ連携も迅速に行えるようになります．これにより，バッチ処理全体が指定された時間内に完了することで業務の滞りやエラーのリスクを大きく削減します．&lt;/p>
+&lt;p>&lt;strong>リアルタイムな意思決定のサポート&lt;/strong>：金融業界では迅速な意思決定が求められるシーンが多々あります．データの高速処理と分析を実現することで，リアルタイムでの市場の動向分析やリスク管理がより効果的に行えるようになります．&lt;/p>
+&lt;h2 id="cloudhosting">クラウドホスティング業界&lt;/h2>
+&lt;p>&lt;img src="../../../images/G-1312418673-640x360.webp" alt="cloudhosting">&lt;/p>
+&lt;p>FireDucksなら，日々のバッチ集計処理での待ち時間やエラーリスクに頭を悩ませているクラウドユーザーへ付加価値を提供することができます．&lt;/p>
+&lt;p>&lt;strong>エラーの最小化&lt;/strong>：新規ユーザーの増加と共に増大するデータ処理時間．しかし，FireDucksの技術で高速化されたバッチ処理により，タイムアウトエラー率を大幅に削減．安定したサービスを提供し続けることができます．&lt;/p>
+&lt;p>&lt;strong>効率的なタスク遷移&lt;/strong>：後続処理を待たせることなく，スムーズにタスクを渡せます．高速なタスク遷移により，バッチ処理全体の完了時間が短縮．時間内に処理が完了しないリスクを大幅に軽減できます．&lt;/p>
+&lt;p>&lt;strong>リソース最適化&lt;/strong>：高速化されたバッチ処理により，割り当てられたリソースを有効に利用して過剰なコストを削減．同時に，処理の効率化でエネルギー消費も抑えられ，経済的かつエコフレンドリーな選択としても優れています．&lt;/p>
+&lt;h2 id="e-commerce">Eコマース業界&lt;/h2>
+&lt;p>&lt;img src="../../../images/G-1327127856-640x360.webp" alt="e-commerse">&lt;/p>
+&lt;p>FireDucksを活用することで，ユーザーの満足度向上と売上アップに直結するレコメンデーションエンジンの効率化を実現することができます．&lt;/p>
+&lt;p>&lt;strong>データ駆動型の最適化&lt;/strong>：顧客の性別，年代，閲覧履歴，クリック履歴，購入履歴などの膨大な情報からのアウトプットは，お客様一人一人に最適な商品を推薦するために重要なデータとなります．しかし，これらのデータ処理は非常に時間がかかるもの．ここでもFireDucksの技術が活躍します．&lt;/p>
+&lt;p>&lt;strong>効果的なレコメンデーションの迅速化&lt;/strong>：FireDucksの技術により，データ前処理時間を劇的に短縮．これにより，さらに高度で効果的なレコメンデーションエンジンアルゴリズムの探求が可能となり，お客様の購買体験を向上させるだけでなく，売上の増加も大いに期待できます．&lt;/p>
+&lt;p>&lt;strong>タイムリーなマーケティング施策&lt;/strong>：短縮された処理時間により，タイムリーなプロモーションやキャンペーンを展開することが可能に．季節感やトレンドに合わせて，お客様の興味と関心を引きつけ，即座に購買に繋げることができます．&lt;/p>
+&lt;h2 id="game">スマホゲームアプリ業界&lt;/h2>
+&lt;p>&lt;img src="../../../images/G-1324678076-640x360.webp" alt="game">&lt;/p>
+&lt;p>FireDucksの活用により，ユーザーの離脱を防ぎ，売上を一段と高めるためのデータ解析の高速化を実現することができます．&lt;/p>
+&lt;p>&lt;strong>ユーザー行動分析&lt;/strong>：ゲームのどのステージでユーザーが離れてしまうのか，課金を決断するトリガーは何か．これらの答えをデータから導くことがゲームの成功のカギを握っています．そして，これらの情報は膨大なデータの中に隠されています．&lt;/p>
+&lt;p>&lt;strong>効果的な施策の実現&lt;/strong>：FireDucksの技術を使えば，データ分析作業が格段に高速化．これによりデータサイエンティストが分析に集中できるようになり，チュートリアルの最適なタイミングや無料ガチャの提供時期など，効果的な施策を迅速に検討，実施できるようになります．結果として，ユーザーの滞留時間の延長や離脱率の低減を期待することができます．&lt;/p>
+&lt;p>&lt;strong>クラウドコストの削減&lt;/strong>：AWSやGCPを利用したデータ集計に関わるコストは，処理時間に比例して増大します．しかしFireDucksの高速化技術により，この処理時間を短縮し，クラウドサービスの利用料金を大幅に節約することが可能となります．&lt;/p>
+&lt;p>&lt;strong>プレイヤー体験の最適化&lt;/strong>：迅速な分析により，ユーザーの動向に合わせてリアルタイムでゲーム内の施策やプロモーションを最適化することができます．これにより，ユーザーの満足度を向上させ，継続的な課金を促進することが期待できます．&lt;/p></description></item><item><title>Docs: FAQ</title><link>https://fireducks-dev.github.io/ja/docs/help/faq/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/help/faq/</guid><description>
+&lt;ul>
+&lt;li>ベータ版について
+&lt;ul>
+&lt;li>FireDucksベータ版は無償で利用できますか？
+&lt;ul>
+&lt;li>できます&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>FireDucksベータ版を商用利用できますか？
+&lt;ul>
+&lt;li>できます&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>FireDucksベータ版はOSSですか？
+&lt;ul>
+&lt;li>違います&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>正式版について
+&lt;ul>
+&lt;li>FireDucks正式版のリリース日程は決まっていますか？
+&lt;ul>
+&lt;li>決まっていません&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>FireDucks正式版のライセンスは決まっていますか？
+&lt;ul>
+&lt;li>決まっていません&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>対応プラットフォームについて
+&lt;ul>
+&lt;li>現在のところ対応しているプラットフォームはx86_64アーキテクチャ上のLinux（&lt;code>manylinux&lt;/code>）です．&lt;/li>
+&lt;li>Windows版などはリクエストが多ければ対応したいと考えています．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>サポートについて
+&lt;ul>
+&lt;li>FireDucksのサポートはありますか？
+&lt;ul>
+&lt;li>私たちの知る限りFireDucksの有償サポートを提供している組織はありません．&lt;/li>
+&lt;li>FireDucksの開発チームやユーザーが交流できるDiscordサーバーを準備中です．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>問題を発見したのですが，どこに連絡すればいいですか？
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/issues">GitHubリポジトリのIssue&lt;/a>に登録してください．&lt;/li>
+&lt;li>もしくはメールで &lt;a href="mailto:contact@fireducks.jp.nec.com">mailto:contact@fireducks.jp.nec.com&lt;/a> までご連絡ください．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>リクエストを送ることは可能ですか？
+&lt;ul>
+&lt;li>もちろんです！ 全てのリクエストに応えることはできないかもしれませんが，皆さんの貴重な意見は大切にしたいと考えています．&lt;a href="https://fireducks-dev.github.io/ja/docs/help/contact/">連絡先はこちら&lt;/a>を参照してください．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>FireDucksのリリース情報はどこで得られますか？
+&lt;ul>
+&lt;li>&lt;a href="https://pypi.org/help/#project-release-notifications">pypi.orgのリリース通知&lt;/a>をご利用ください．&lt;/li>
+&lt;li>&lt;a href="https://twitter.com/fireducksdev">X (Twitter)&lt;/a>でのアナウンスをします．&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul></description></item><item><title>Docs: Contact</title><link>https://fireducks-dev.github.io/ja/docs/help/contact/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/help/contact/</guid><description>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/issues">Issues on GitHub&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://twitter.com/fireducksdev">X (Twitter)&lt;/a>&lt;/li>
+&lt;li>Discord (preparing)&lt;/li>
+&lt;li>&lt;a href="mailto:contact@fireducks.jp.nec.com">E-mail&lt;/a>&lt;/li>
+&lt;/ul></description></item></channel></rss>

@@ -1,29 +1,519 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on</title><link>https://fireducks-dev.github.io/ja/posts/</link><description>Recent content in Posts on</description><generator>Hugo -- gohugo.io</generator><lastBuildDate>Sun, 24 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/ja/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>FireDucks vs Polars 42勝24敗！ あなたはどっちを使ってpandasを高速化する！？</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-24-ishizaka/</link><pubDate>Sun, 24 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-24-ishizaka/</guid><description/></item><item><title>FireDucks に隠し機能を作ろうと思ったけどボツになった話</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-20-daido/</link><pubDate>Wed, 20 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-20-daido/</guid><description/></item><item><title>FireDucksにおける最適化処理の紹介</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-18-araki/</link><pubDate>Mon, 18 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-18-araki/</guid><description/></item><item><title>FireDucksを支える技術</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-15-ishizaka/</link><pubDate>Fri, 15 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-15-ishizaka/</guid><description/></item><item><title>FireDucks の GroupBy アルゴリズム切替えについての解説</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-08-ohno/</link><pubDate>Fri, 08 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-08-ohno/</guid><description/></item><item><title>FireDucks内部で働く高速化技術</title><link>https://fireducks-dev.github.io/ja/posts/est/</link><pubDate>Tue, 05 Dec 2023 00:00:00 +0900</pubDate><guid>https://fireducks-dev.github.io/ja/posts/est/</guid><description>groupbyの切り替え #
-この記事ではFireDucks内部で使われているgroupby高速化技術について紹介します．
-表データ分析においてgroupby操作は最も基本的で重要な操作の一つです． groupby操作を用いることでデータの平均や分散といった重要な統計的性質を知ることができ， その他操作と組み合わせることで新しい特徴量を得ることもできます．
-FireDucksでは高速なgroupby操作を実現するためにデータ特性に応じた最適化を行っています． その一つがグループ数によるgroupbyアルゴリズムの自動選択です． 具体的にはデータのグループ数に注目しグループ数が小さいデータに対して高速に計算可能な アルゴリズム(アルゴリズムAと呼ぶ)と， グループ数が大きいデータに対して高速に計算可能なアルゴリズム(アルゴリズムBと呼ぶ)とを切り替えています． ここでグループ数とは注目するカラムを構成するデータの種類を示します．
-例えば以下のような表データを考えてみましょう．
-food category 0 apple fruit 1 carrot vegetable 2 peach fruit 3 onion vegetable 4 grape fruit foodカラムを構成する要素に注目するとapple, carrot, peach, onion, grapeの5種類であることが分かります． よってfoodカラムのグループ数は5です． 一方で，categoryカラムを構成する要素に注目するとfruit,vegetableの2種類であることが分かります． よってcategoryカラムのグループ数は2です．
-グループ数の推定 #
-巨大なデータを扱うときに実際にデータを全て確認してグループ数を計算すると時間がかかります． そこで，FireDucksではグループ数の厳密な値を求めることなく統計的手法を用いてグループ数の推定を行っています1． 具体的には以下の手順で行われます．
-注目するグループキーのデータ列の中からランダムにデータを一つ取り出す． 取り出したデータを記録する． 再び注目するグループキーのデータ列の中からランダムにデータを一つ取り出す， すでに記録してあるデータと一致するか判定を行い，データを記録する． 3,4の操作を一定回数繰り返す． 3と4の操作を一定回数繰り返した後，データを取り出した回数と一致した回数から 注目するグループキーのデータのグループ数を推定する．
-性能評価 #
-データ分析に関する多くの処理を含むベンチマークであるTPC-Hを用いて計算速度の計測を行いました．
-Aはgroupby操作をアルゴリズムAのみを用いており，Bはgroupby操作をアルゴリズムBのみを用いています． autoはgroupby操作についてグループ数の推定とアルゴリズムAとBの自動選択をしています． アルゴリズムAとアルゴリズムBの実行時間にほとんど差がない処理については上のグラフでは省略しています． グラフから，q10を除く処理で自動判定アルゴリズムは，アルゴリズムAとアルゴリズムBのうち速い方のアルゴリズムの選択ができていることが分かります． totalはアルゴリズムA,アルゴリズムB,自動選択アルゴリズムについて上記グラフから除いた処理も含めたTPC-H全体の計算時間を示しています． このことからTPC-H全体において，自動判定アルゴリズムはアルゴリズムAに対して3倍程度高速化ができており， アルゴリズムBに対しては1.2倍程度高速化ができていることが分かります．
-参考 #
-M. Bressan, E. Peserico, and L. Pretto. Simple set cardinality estimation through random sampling.</description></item><item><title>FireDucksのご紹介</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-04-ishizaka/</link><pubDate>Mon, 04 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-04-ishizaka/</guid><description/></item><item><title>FireDucks のインポートフック機能にまつわるエトセトラ</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-01-daido/</link><pubDate>Fri, 01 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-01-daido/</guid><description/></item><item><title>インポートフック：ソースコードを書き換えずに FireDucks を使う方法のご紹介</title><link>https://fireducks-dev.github.io/ja/posts/importhook/</link><pubDate>Wed, 15 Nov 2023 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/ja/posts/importhook/</guid><description>FireDucks 開発チームの大道です．今日は開発者ブログとして，FireDucks に備わっているインポートフック機能をご紹介したいと思います．この機能を使えば，お手持ちのソースコードを1行も書き換えることなく FireDucks を使うことができるようになります．
-コマンドラインから Python ファイルを実行する際の使い方と，IPython や Jupyter Notebook での使い方を見ていきましょう．
-インポートフックとは？ #
-FireDucks はオリジナルの pandas と同じように振る舞うため，インポート文を以下のように書き換えるだけで簡単に使い始めることができます．
-# import pandas as pd import fireducks.pandas as pd しかしたかが1行書き換えるだけとはいえ，今まで作成してきたプログラムで pandas を使用している部分を探して全部 FireDucks に置き換えるのは，意外と面倒くさいものです．また，pandas と連携するサードパーティライブラリでも FireDucks を使用したい場合，そのライブラリの中にまで手を入れて import pandas を書き換える作業は，普通はしたくないでしょう．
-Get Started でも触れられている通り，FireDucks にはインポートフックというユーティリティが含まれています．コマンドラインで your_script.py を実行する際に，Python インタープリターに以下のようにオプションを指定してください．
-python3 -m fireducks.imhook your_script.py 以上のようにして起動すると，pandas をインポートしようとしたら代わりに fireducks.pandas がインポートされるようになります．これは your_script.py のソースコードを編集しているわけではなく，プログラムを実行しながら動的にインポート処理に割り込んでいます．
-インポートフックの動作例 #
-以下のような簡単な Python スクリプト print_classname.py で動作を確認してみましょう．このスクリプトでは DataFrame クラスの repr 表現が出力されます．
-import pandas as pd print(pd.</description></item><item><title>Pythonの高速データフレームライブラリFireDucksを使ってみた</title><link>https://fireducks-dev.github.io/ja/posts/nes_taxi/</link><pubDate>Mon, 23 Oct 2023 08:47:36 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/nes_taxi/</guid><description>pandasは，プログラミング言語Pythonにおいて，データ解析を支援する機能を提供するライブラリである． NECの研究所では高速化版pandasであるFireDucksというライブラリを開発している．
-データの準備 #
-ニューヨークのタクシーの乗降者履歴のデータを対象に分析を行う． データの出典は以下である：
-https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
-大規模データの解析を行うため，上記リンクから「Yellow Taxi Trip Records」を2022年1月から2023年6月までのデータをダウンロードし結合した． データはparquet形式で提供されているが，日頃良く使うcsv形式で試すために変換しておく． 参考までにデータ準備用のスクリプトを付記しておく．
-import pandas as pd import os dir = &amp;quot;xxx&amp;quot; df_list = [] for year in [2022, 2023]: for i in range(12): month = str(i+1).zfill(2) fn = f&amp;quot;yellow_tripdata_{year}-{month}.parquet&amp;quot; file = os.path.join(dir, fn) if not os.path.exists(file): continue df = pd.read_parquet(fn) df_list.append(df) all_df = pd.concat(df_list) all_df.to_csv(&amp;quot;taxi_all.csv&amp;quot;) データの中身は以下のような値が入っている（列は一部抜粋）．
-列名 データ型 説明 passenger_count int 乗車人数 pu_location_Id string タクシーメーターが作動し始めたTLCタクシーゾーン． do_location_Id string タクシーメーターが解除されたTLCタクシーゾーン． tpep_dropoff_datetime string メーターが解除された日時． tpep_pickupdate_time string メーターが作動し始めた日時． trip_distance double タクシーメーターによって報告された走行距離（マイル単位）． total_amount double 乗客に請求される合計金額． ※現金のチップは含まれない． extra double その他の割増料金と追加料金．現在，これには0.</description></item></channel></rss>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/ja/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><lastBuildDate>Sun, 24 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/ja/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: FireDucks vs Polars 42勝24敗！ あなたはどっちを使ってpandasを高速化する！？</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-24-ishizaka/</link><pubDate>Sun, 24 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-24-ishizaka/</guid><description/></item><item><title>Posts: FireDucks に隠し機能を作ろうと思ったけどボツになった話</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-20-daido/</link><pubDate>Wed, 20 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-20-daido/</guid><description/></item><item><title>Posts: FireDucksにおける最適化処理の紹介</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-18-araki/</link><pubDate>Mon, 18 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-18-araki/</guid><description/></item><item><title>Posts: FireDucksを支える技術</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-15-ishizaka/</link><pubDate>Fri, 15 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-15-ishizaka/</guid><description/></item><item><title>Posts: FireDucks の GroupBy アルゴリズム切替えについての解説</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-08-ohno/</link><pubDate>Fri, 08 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-08-ohno/</guid><description/></item><item><title>Posts: FireDucks内部で働く高速化技術</title><link>https://fireducks-dev.github.io/ja/posts/est/</link><pubDate>Tue, 05 Dec 2023 00:00:00 +0900</pubDate><guid>https://fireducks-dev.github.io/ja/posts/est/</guid><description>
+&lt;h2 id="groupbyの切り替え">groupbyの切り替え&lt;/h2>
+&lt;p>この記事ではFireDucks内部で使われているgroupby高速化技術について紹介します．&lt;/p>
+&lt;p>表データ分析においてgroupby操作は最も基本的で重要な操作の一つです．
+groupby操作を用いることでデータの平均や分散といった重要な統計的性質を知ることができ，
+その他操作と組み合わせることで新しい特徴量を得ることもできます．&lt;/p>
+&lt;p>FireDucksでは高速なgroupby操作を実現するためにデータ特性に応じた最適化を行っています．
+その一つがグループ数によるgroupbyアルゴリズムの自動選択です．
+具体的にはデータのグループ数に注目しグループ数が小さいデータに対して高速に計算可能な
+アルゴリズム(アルゴリズムAと呼ぶ)と，
+グループ数が大きいデータに対して高速に計算可能なアルゴリズム(アルゴリズムBと呼ぶ)とを切り替えています．
+ここでグループ数とは注目するカラムを構成するデータの種類を示します．&lt;/p>
+&lt;p>例えば以下のような表データを考えてみましょう．&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>food&lt;/th>
+&lt;th>category&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>0&lt;/td>
+&lt;td>apple&lt;/td>
+&lt;td>fruit&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>1&lt;/td>
+&lt;td>carrot&lt;/td>
+&lt;td>vegetable&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>2&lt;/td>
+&lt;td>peach&lt;/td>
+&lt;td>fruit&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>3&lt;/td>
+&lt;td>onion&lt;/td>
+&lt;td>vegetable&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>4&lt;/td>
+&lt;td>grape&lt;/td>
+&lt;td>fruit&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>foodカラムを構成する要素に注目するとapple, carrot, peach, onion, grapeの5種類であることが分かります．
+よってfoodカラムのグループ数は5です．
+一方で，categoryカラムを構成する要素に注目するとfruit,vegetableの2種類であることが分かります．
+よってcategoryカラムのグループ数は2です．&lt;/p>
+&lt;h2 id="グループ数の推定">グループ数の推定&lt;/h2>
+&lt;p>巨大なデータを扱うときに実際にデータを全て確認してグループ数を計算すると時間がかかります．
+そこで，FireDucksではグループ数の厳密な値を求めることなく統計的手法を用いてグループ数の推定を行っています&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>．
+具体的には以下の手順で行われます．&lt;/p>
+&lt;ol>
+&lt;li>注目するグループキーのデータ列の中からランダムにデータを一つ取り出す．&lt;/li>
+&lt;li>取り出したデータを記録する．&lt;/li>
+&lt;li>再び注目するグループキーのデータ列の中からランダムにデータを一つ取り出す，&lt;/li>
+&lt;li>すでに記録してあるデータと一致するか判定を行い，データを記録する．&lt;/li>
+&lt;li>3,4の操作を一定回数繰り返す．&lt;/li>
+&lt;/ol>
+&lt;p>3と4の操作を一定回数繰り返した後，データを取り出した回数と一致した回数から
+注目するグループキーのデータのグループ数を推定する．&lt;/p>
+&lt;h2 id="性能評価">性能評価&lt;/h2>
+&lt;p>データ分析に関する多くの処理を含むベンチマークであるTPC-Hを用いて計算速度の計測を行いました．&lt;/p>
+&lt;p>&lt;img src="compare.png" alt="compare">&lt;/p>
+&lt;p>Aはgroupby操作をアルゴリズムAのみを用いており，Bはgroupby操作をアルゴリズムBのみを用いています．
+autoはgroupby操作についてグループ数の推定とアルゴリズムAとBの自動選択をしています．
+アルゴリズムAとアルゴリズムBの実行時間にほとんど差がない処理については上のグラフでは省略しています．
+グラフから，q10を除く処理で自動判定アルゴリズムは，アルゴリズムAとアルゴリズムBのうち速い方のアルゴリズムの選択ができていることが分かります．
+totalはアルゴリズムA,アルゴリズムB,自動選択アルゴリズムについて上記グラフから除いた処理も含めたTPC-H全体の計算時間を示しています．
+このことからTPC-H全体において，自動判定アルゴリズムはアルゴリズムAに対して3倍程度高速化ができており，
+アルゴリズムBに対しては1.2倍程度高速化ができていることが分かります．&lt;/p>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>M. Bressan, E. Peserico, and L. Pretto. Simple set cardinality estimation through random sampling. CoRR, abs/1512.07901, 2015.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Posts: FireDucksのご紹介</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-04-ishizaka/</link><pubDate>Mon, 04 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-04-ishizaka/</guid><description/></item><item><title>Posts: FireDucks のインポートフック機能にまつわるエトセトラ</title><link>https://fireducks-dev.github.io/ja/posts/2023-12-01-daido/</link><pubDate>Fri, 01 Dec 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2023-12-01-daido/</guid><description/></item><item><title>Posts: インポートフック：ソースコードを書き換えずに FireDucks を使う方法のご紹介</title><link>https://fireducks-dev.github.io/ja/posts/importhook/</link><pubDate>Wed, 15 Nov 2023 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/ja/posts/importhook/</guid><description>
+&lt;p>FireDucks 開発チームの大道です．今日は開発者ブログとして，FireDucks に備わっているインポートフック機能をご紹介したいと思います．この機能を使えば，お手持ちのソースコードを1行も書き換えることなく FireDucks を使うことができるようになります．&lt;/p>
+&lt;p>コマンドラインから Python ファイルを実行する際の使い方と，IPython や Jupyter Notebook での使い方を見ていきましょう．&lt;/p>
+&lt;h1 id="インポートフックとは">インポートフックとは？&lt;/h1>
+&lt;p>FireDucks はオリジナルの pandas と同じように振る舞うため，インポート文を以下のように書き換えるだけで簡単に使い始めることができます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># import pandas as pd&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>しかしたかが1行書き換えるだけとはいえ，今まで作成してきたプログラムで pandas を使用している部分を探して全部 FireDucks に置き換えるのは，意外と面倒くさいものです．また，pandas と連携するサードパーティライブラリでも FireDucks を使用したい場合，そのライブラリの中にまで手を入れて &lt;code>import pandas&lt;/code> を書き換える作業は，普通はしたくないでしょう．&lt;/p>
+&lt;p>&lt;a href="https://fireducks-dev.github.io/ja/docs/get-started/#import-hook">Get Started&lt;/a> でも触れられている通り，FireDucks にはインポートフックというユーティリティが含まれています．コマンドラインで &lt;code>your_script.py&lt;/code> を実行する際に，Python インタープリターに以下のようにオプションを指定してください．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>python3 -m fireducks.imhook your_script.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>以上のようにして起動すると，&lt;code>pandas&lt;/code> をインポートしようとしたら代わりに &lt;code>fireducks.pandas&lt;/code> がインポートされるようになります．これは &lt;code>your_script.py&lt;/code> のソースコードを編集しているわけではなく，プログラムを実行しながら動的にインポート処理に割り込んでいます．&lt;/p>
+&lt;h2 id="インポートフックの動作例">インポートフックの動作例&lt;/h2>
+&lt;p>以下のような簡単な Python スクリプト &lt;code>print_classname.py&lt;/code> で動作を確認してみましょう．このスクリプトでは DataFrame クラスの repr 表現が出力されます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(pd&lt;span style="color:#f92672">.&lt;/span>DataFrame)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>普通に実行すると以下のような出力ですが…．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ python3 print_classname.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;class &lt;span style="color:#e6db74">&amp;#39;pandas.core.frame.DataFrame&amp;#39;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>インポートフック機能を使って実行すると以下のような出力に変わります！ 🥳&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ python3 -m fireducks.imhook print_classname.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;class &lt;span style="color:#e6db74">&amp;#39;fireducks.pandas.frame.DataFrame&amp;#39;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>ソースコードを編集していないのに FireDucks のデータフレームが使えるようになっていることがわかります．&lt;/p>
+&lt;h2 id="制限事項">制限事項&lt;/h2>
+&lt;h3 id="shebang-未対応">shebang 未対応&lt;/h3>
+&lt;p>現在のところ，shebang (&lt;code>#!...&lt;/code>) による実行には対応していません．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#!/usr/bin/python3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(pd&lt;span style="color:#f92672">.&lt;/span>DataFrame)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Python インタープリターに &lt;code>-m&lt;/code> オプションを指定できないため，インポートフックを有効化できません（そりゃそうだ）．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ chmod +x print_classname_shebang.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ ./print_classname_shebang.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;class &lt;span style="color:#e6db74">&amp;#39;pandas.core.frame.DataFrame&amp;#39;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="他のモジュール実行オプションとの同時指定不可">他のモジュール実行オプションとの同時指定不可&lt;/h3>
+&lt;p>Python インタープリターの起動時には &lt;code>-m&lt;/code> オプションはひとつしか指定できないため，&lt;code>-m&lt;/code> オプションを使って起動する他のツールと同時に使うことはできません．&lt;/p>
+&lt;h3 id="サブプロセス非対応">サブプロセス非対応&lt;/h3>
+&lt;p>&lt;code>subprocess&lt;/code> モジュールを使って Python プロセスを新たに起動した場合，そのサブプロセスにインポートフックの設定は受け継がれません．&lt;/p>
+&lt;h1 id="jupyter-notebook-での使い方">Jupyter Notebook での使い方&lt;/h1>
+&lt;p>インポートフックは Jupyter Notebook でも利用することができます．ただし現在のところ，Jupyter を起動する際のオプションとしては利用できず，ノートブックの最初のセルで明示的に有効化する必要があります．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.importhook
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks&lt;span style="color:#f92672">.&lt;/span>importhook&lt;span style="color:#f92672">.&lt;/span>activate_hook(&lt;span style="color:#e6db74">&amp;#34;fireducks.pandas&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;pandas&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>自分で書いたノートブック内で pandas をインポートするだけならインポートフックを使うメリットはあまりないかもしれません．しかし，pandas と連携するようなサードパーティライブラリの中ででもインポートフックは働くため，そのようなライブラリをノートブックから使用する場合に便利です．&lt;/p>
+&lt;p>無効化する場合は以下の関数を実行してください．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>fireducks&lt;span style="color:#f92672">.&lt;/span>importhook&lt;span style="color:#f92672">.&lt;/span>deactivate_hook()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>ただし，オリジナルの pandas のデータフレームと FireDucks のデータフレームを混ぜて使うと（恐らく複雑怪奇なエラーメッセージとともに）エラーが発生します．基本的には一度インポートフックを有効化したら有効化しっぱなしにしておきましょう．&lt;/p>
+&lt;h2 id="ipython-cli-での起動方法">IPython CLI での起動方法&lt;/h2>
+&lt;p>IPython の場合，先述した Jupyter Notebook での使い方と同じように手動で有効化してもいいのですが，bash などでは以下のようにして IPython CLI を起動することもできます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>python3 -m fireducks.imhook &lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#66d9ef">$(&lt;/span>which ipython&lt;span style="color:#66d9ef">)&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>うーん…，ちょっと無理矢理ですね！&lt;/p>
+&lt;h1 id="まとめにかえて">まとめにかえて&lt;/h1>
+&lt;p>FireDucks はまだまだ研究開発中のソフトウェアで，pandas で動いていたプログラムで FireDucks を使うように変更しても，エラーになってしまって動かない部分があるかもしれません．私たち FireDucks 開発チームではベータ版を公開してからも日々機能改善に取り組んでおり，エラー報告など，皆さんからのフィードバックをお待ちしております．&lt;a href="https://fireducks-dev.github.io/ja/docs/help/contact/">連絡先はこちら&lt;/a>を参照してください．&lt;/p>
+&lt;p>以上，ソースコードを1行も書き換えずに FireDucks を使う方法のご紹介でした．FireDucks を使ってみたいと思った方は &lt;a href="https://fireducks-dev.github.io/ja/docs/get-started/">Get Started&lt;/a> や&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/01-intro/">ユーザーガイド&lt;/a>，pandas との速度比較が気になる方は&lt;a href="https://fireducks-dev.github.io/ja/docs/benchmarks/">ベンチマーク&lt;/a>も読んでみてくださいね．&lt;/p>
+&lt;p>May the Acceleration be with you,&lt;!-- raw HTML omitted -->
+FireDucks 開発チーム&lt;/p></description></item><item><title>Posts: Pythonの高速データフレームライブラリFireDucksを使ってみた</title><link>https://fireducks-dev.github.io/ja/posts/nes_taxi/</link><pubDate>Mon, 23 Oct 2023 08:47:36 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/nes_taxi/</guid><description>
+&lt;p>pandasは，プログラミング言語Pythonにおいて，データ解析を支援する機能を提供するライブラリである．
+NECの研究所では高速化版pandasであるFireDucksというライブラリを開発している．&lt;/p>
+&lt;h2 id="データの準備">データの準備&lt;/h2>
+&lt;p>ニューヨークのタクシーの乗降者履歴のデータを対象に分析を行う．
+データの出典は以下である：&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;a href="https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page">https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page&lt;/a>&lt;/p>
+&lt;/blockquote>
+&lt;p>大規模データの解析を行うため，上記リンクから「Yellow Taxi Trip Records」を2022年1月から2023年6月までのデータをダウンロードし結合した．
+データはparquet形式で提供されているが，日頃良く使うcsv形式で試すために変換しておく．
+参考までにデータ準備用のスクリプトを付記しておく．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> os
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>dir &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;xxx&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_list &lt;span style="color:#f92672">=&lt;/span> []
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> year &lt;span style="color:#f92672">in&lt;/span> [&lt;span style="color:#ae81ff">2022&lt;/span>, &lt;span style="color:#ae81ff">2023&lt;/span>]:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(&lt;span style="color:#ae81ff">12&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>month &lt;span style="color:#f92672">=&lt;/span> str(i&lt;span style="color:#f92672">+&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>zfill(&lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fn &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">f&lt;/span>&lt;span style="color:#e6db74">&amp;#34;yellow_tripdata_&lt;/span>&lt;span style="color:#e6db74">{&lt;/span>year&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74">-&lt;/span>&lt;span style="color:#e6db74">{&lt;/span>month&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74">.parquet&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>file &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(dir, fn)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>exists(file):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">continue&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(fn)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_list&lt;span style="color:#f92672">.&lt;/span>append(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>all_df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>concat(df_list)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>all_df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;taxi_all.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>データの中身は以下のような値が入っている（列は一部抜粋）．&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>列名&lt;/th>
+&lt;th>&lt;!-- raw HTML omitted -->データ型&lt;!-- raw HTML omitted -->&lt;/th>
+&lt;th>説明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;code>passenger_count&lt;/code>&lt;/td>
+&lt;td>int&lt;/td>
+&lt;td>乗車人数&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>pu_location_Id&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>タクシーメーターが作動し始めたTLCタクシーゾーン．&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>do_location_Id&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>タクシーメーターが解除されたTLCタクシーゾーン．&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>tpep_dropoff_datetime&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>メーターが解除された日時．&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>tpep_pickupdate_time&lt;/code>&lt;/td>
+&lt;td>string&lt;/td>
+&lt;td>メーターが作動し始めた日時．&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>trip_distance&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>タクシーメーターによって報告された走行距離（マイル単位）．&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>total_amount&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>乗客に請求される合計金額． ※現金のチップは含まれない．&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>extra&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>その他の割増料金と追加料金．現在，これには0.50ドルおよび1ドルのラッシュアワー料金と夜間料金のみが含まれる．&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>fare_amount&lt;/code>&lt;/td>
+&lt;td>double&lt;/td>
+&lt;td>メーターによって計算された時間距離併用運賃．&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="実際に行う前処理">実際に行う前処理&lt;/h2>
+&lt;p>用意したデータに対して，データ分析でよく利用される型変換，列追加，異常値削除などの一連の前処理計算を行う．&lt;/p>
+&lt;p>まず速度計測用のラッパーを用意しておく．
+&lt;code>_evaluate()&lt;/code>については後述する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> time &lt;span style="color:#f92672">import&lt;/span> time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> functools &lt;span style="color:#f92672">import&lt;/span> wraps
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">timer&lt;/span>(func):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@wraps&lt;/span>(func)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">wp&lt;/span>(&lt;span style="color:#f92672">*&lt;/span>args, &lt;span style="color:#f92672">**&lt;/span>kargs):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t &lt;span style="color:#f92672">=&lt;/span> time()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ret &lt;span style="color:#f92672">=&lt;/span> func(&lt;span style="color:#f92672">*&lt;/span>args, &lt;span style="color:#f92672">**&lt;/span>kargs)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(&lt;span style="color:#e6db74">f&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#e6db74">{&lt;/span>func&lt;span style="color:#f92672">.&lt;/span>__name__&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74"> : &lt;/span>&lt;span style="color:#e6db74">{&lt;/span>(time() &lt;span style="color:#f92672">-&lt;/span> t)&lt;span style="color:#e6db74">:&lt;/span>&lt;span style="color:#e6db74">.5g&lt;/span>&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74"> [sec]&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> ret
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> wp
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">evaluate&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">if&lt;/span> hasattr(df, &lt;span style="color:#e6db74">&amp;#34;_evaluate&amp;#34;&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="データの読み込み">データの読み込み&lt;/h3>
+&lt;p>まずはデータを読み込む．
+pandasをimportしてから&lt;code>read_csv&lt;/code>で読み込む．
+関数だけ定義しておいて，後で纏めて呼び出して計測する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">file_read&lt;/span>(fn, args&lt;span style="color:#f92672">=&lt;/span>{}):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(fn, &lt;span style="color:#f92672">**&lt;/span>args)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(df&lt;span style="color:#f92672">.&lt;/span>shape)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="データ処理">データ処理&lt;/h3>
+&lt;p>欠損値があるデータを削除する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">drop_na&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>dropna(how&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;all&amp;#34;&lt;/span>, inplace&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>乗車，降車の年月日時はstring型で読み込んだので，日付型に変換しておく．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">txt_to_date&lt;/span>(df, low):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[low] &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>to_datetime(df[low])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>乗車数でgroupbyして分布を見てみる（printは性能評価に含めないので省略）．
+乗車数0人のデータがあることが分かるので，削除する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 一人以上乗車している&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_passenger_c&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;passenger_count&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;passenger_count&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>乗車日時の日付データから，年，月，日，時の情報を取り出し，列を追加する．
+乗車年や月の分布を見てみると不適切な値が含まれているので，削除する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 乗車年/月が正しい&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_pu_date&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;year&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>year
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;month&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>month
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;date&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>day
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#39;hour&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>hour
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;year&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#39;year&amp;#39;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">2022&lt;/span>) &lt;span style="color:#f92672">|&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#39;year&amp;#39;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">2023&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;month&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#39;month&amp;#39;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> df[&lt;span style="color:#e6db74">&amp;#39;month&amp;#39;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">12&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df_ &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>groupby([&lt;span style="color:#e6db74">&amp;#34;year&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;month&amp;#34;&lt;/span>])&lt;span style="color:#f92672">.&lt;/span>size()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df_)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>降車時間と乗車時間の差を分に変換して列を追加する．
+非正の乗車時間や長すぎる乗車時間を削除する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 現実的な乗車時間（分）&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_ride_time&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;ride_time&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;tpep_dropoff_datetime&amp;#34;&lt;/span>] &lt;span style="color:#f92672">-&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;tpep_pickup_datetime&amp;#34;&lt;/span>])&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>seconds &lt;span style="color:#f92672">/&lt;/span> &lt;span style="color:#ae81ff">60&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;ride_time&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;ride_time&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">180&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>乗車距離や運賃についても非負や大きすぎる値を削除する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 現実的な距離&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_trip_distance&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;trip_distance&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;trip_distance&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">250&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 現実的な運賃&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_total_amount&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;total_amount&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;total_amount&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">1000&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>乗降車地点のIDから緯度経度を算出する．
+IDと地点の関係は以下で確認することができる．&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;a href="https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv">https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv&lt;/a>&lt;/p>
+&lt;/blockquote>
+&lt;p>緯度経度は，&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;a href="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip">https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip&lt;/a>&lt;/p>
+&lt;/blockquote>
+&lt;p>をもとに作成した変換テーブルをmergeすることで列を追加する．&lt;/p>
+&lt;p>緯度経度の情報からニューヨーク市外のデータを削除する．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># IDから緯度経度を割り出す&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">add_coordinate&lt;/span>(df, ID_df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>merge(ID_df&lt;span style="color:#f92672">.&lt;/span>rename(columns&lt;span style="color:#f92672">=&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;longitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;start_lon&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;latitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;start_lat&amp;#34;&lt;/span>}),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;PULocationID&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, how&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;left&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>drop(&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, axis&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>merge(ID_df&lt;span style="color:#f92672">.&lt;/span>rename(columns&lt;span style="color:#f92672">=&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;longitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;end_lon&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;latitude&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;end_lat&amp;#34;&lt;/span>}),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;DOLocationID&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, how&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;left&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>drop(&lt;span style="color:#e6db74">&amp;#34;LocationID&amp;#34;&lt;/span>, axis&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># NY内かをcheckする&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">in_NY&lt;/span>(df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;start_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">71.47&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;start_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">79.45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;start_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">40.29&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;start_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;end_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">71.47&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;end_lon&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">79.45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df[(df[&lt;span style="color:#e6db74">&amp;#34;end_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">40.29&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (df[&lt;span style="color:#e6db74">&amp;#34;end_lat&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;=&lt;/span> &lt;span style="color:#ae81ff">45&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">check_in_NY&lt;/span>(df, ID_df):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> add_coordinate(df, ID_df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> in_NY(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>以上のようにデータを読み込み，型変換，列追加，異常値削除をする一連の処理を用意した．&lt;/p>
+&lt;ol>
+&lt;li>ファイルの読み込み&lt;/li>
+&lt;li>日付データを文字列から日付型に変換&lt;/li>
+&lt;li>前処理&lt;/li>
+&lt;li>欠損値を削除&lt;/li>
+&lt;li>乗客数のチェック&lt;/li>
+&lt;li>groupbyで分布を確認&lt;/li>
+&lt;li>1人以上を選択&lt;/li>
+&lt;li>乗車時刻をチェック&lt;/li>
+&lt;li>日付データから年月日時を取得し，列を追加&lt;/li>
+&lt;li>年でgroupbyして，確認 → 該当年のみを選択&lt;/li>
+&lt;li>月でgroupbyして，確認 → 1～12月のみを選択&lt;/li>
+&lt;li>年，月でgroupbyして分布を確認&lt;/li>
+&lt;li>乗車時間をcheck&lt;/li>
+&lt;li>降車時刻と乗車時刻の差をとり，分に変換して列を追加（&lt;code>dt.total_second&lt;/code>がFireDucks未対応）&lt;/li>
+&lt;li>現実的な乗車時間のデータを選択する&lt;/li>
+&lt;li>乗車距離をチェック&lt;/li>
+&lt;li>現実的な乗車距離のデータを選択する&lt;/li>
+&lt;li>料金をチェック&lt;/li>
+&lt;li>現実的な料金のデータを選択する&lt;/li>
+&lt;li>NY市内のデータを選択&lt;/li>
+&lt;li>乗降車のIDと，緯度経度のテーブルをマージする&lt;/li>
+&lt;li>乗降車の緯度経度がNY市内となっているデータを選択&lt;/li>
+&lt;/ol>
+&lt;h2 id="pandasでの実行時間">pandasでの実行時間&lt;/h2>
+&lt;p>まずはpandasでの実行時間を確認してみる．
+測定には24コアXeonサーバー（Intel(R) Xeon(R) Gold 6226 CPU x 2，メインメモリ256GB）を用いた．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> os
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>data_path &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;data_sets&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fn &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(data_path, &lt;span style="color:#e6db74">&amp;#34;taxi_all.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ID_file &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(data_path, &lt;span style="color:#e6db74">&amp;#34;ID_to_coordinate.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>need_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#39;tpep_pickup_datetime&amp;#39;&lt;/span>,&lt;span style="color:#e6db74">&amp;#39;tpep_dropoff_datetime&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;passenger_count&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;trip_distance&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">&amp;#39;PULocationID&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;DOLocationID&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;total_amount&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;improvement_surcharge&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;extra&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;fare_amount&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;RatecodeID&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@timer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">Preprocessing&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> file_read(fn, {&lt;span style="color:#e6db74">&amp;#34;usecols&amp;#34;&lt;/span>: need_cols})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ID_df &lt;span style="color:#f92672">=&lt;/span> file_read(ID_file)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> txt_to_date(df, &lt;span style="color:#e6db74">&amp;#34;tpep_pickup_datetime&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> txt_to_date(df, &lt;span style="color:#e6db74">&amp;#34;tpep_dropoff_datetime&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> drop_na(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_passenger_c(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_pu_date(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_ride_time(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_trip_distance(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_total_amount(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> check_in_NY(df, ID_df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>evaluate(df)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> df
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> Preprocessing()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>さて，pandasでの実行時間は下表のような結果になった．
+&lt;code>file_read&lt;/code>が2件あるのはtaxiのデータの他に，マージ用の地点データも読み込んだためであり，&lt;code>txt_to_date&lt;/code>は乗車時間と降車時間の2件を変換したためである．
+実行時間を見てみるとファイル読み込みに1分以上かかっていることが分かる．
+さらに列の追加やmerge処理を含む&lt;code>check_pu_date&lt;/code>や&lt;code>add_coordinate&lt;/code>に30秒以上時間がかかっており，実装した前処理の実行時間は終了するまでに186秒かかっている．&lt;/p>
+&lt;h2 id="fireducksでの実行時間">FireDucksでの実行時間&lt;/h2>
+&lt;p>importするライブラリをpandasに置き換えてFireDucksを用いた場合の実行時間の計測を行う．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>pip install fireducks
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>pandasの前処理計算のために記述した上記スクリプトはFireDucksがpandasとの互換性を持っているためにFireDucksをimportすれば，そのまま利用可能である．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>注意点として，FireDucksはメソッドが呼ばれても処理をすぐには実行せず，結果が必要になった際にまとめて処理を実行する．
+そのため，各メソッドの実行時間を計測するためには&lt;code>_evaliate()&lt;/code>を実行する必要がある．&lt;/p>
+&lt;p>FireDucksをimportし，同様の前処理計算を実行するとpandasとの実行時間との比較の表は以下のようになった．&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:left">関数&lt;/th>
+&lt;th style="text-align:right">pandas[sec]&lt;/th>
+&lt;th style="text-align:right">FireDucks[sec]&lt;/th>
+&lt;th style="text-align:right">速度向上率&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>file_read&lt;/code>&lt;/td>
+&lt;td style="text-align:right">72.19&lt;/td>
+&lt;td style="text-align:right">3.52&lt;/td>
+&lt;td style="text-align:right">20.49&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>file_read&lt;/code>&lt;/td>
+&lt;td style="text-align:right">0.003&lt;/td>
+&lt;td style="text-align:right">0.01&lt;/td>
+&lt;td style="text-align:right">0.38&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>txt_to_date&lt;/code>&lt;/td>
+&lt;td style="text-align:right">9.07&lt;/td>
+&lt;td style="text-align:right">19.10&lt;/td>
+&lt;td style="text-align:right">0.48&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>txt_to_date&lt;/code>&lt;/td>
+&lt;td style="text-align:right">8.57&lt;/td>
+&lt;td style="text-align:right">20.57&lt;/td>
+&lt;td style="text-align:right">0.42&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>drop_na&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.13&lt;/td>
+&lt;td style="text-align:right">0.70&lt;/td>
+&lt;td style="text-align:right">4.47&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_passenger_c&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.21&lt;/td>
+&lt;td style="text-align:right">1.80&lt;/td>
+&lt;td style="text-align:right">1.79&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_pu_date&lt;/code>&lt;/td>
+&lt;td style="text-align:right">27.37&lt;/td>
+&lt;td style="text-align:right">0.99&lt;/td>
+&lt;td style="text-align:right">27.64&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_ride_time&lt;/code>&lt;/td>
+&lt;td style="text-align:right">7.02&lt;/td>
+&lt;td style="text-align:right">2.00&lt;/td>
+&lt;td style="text-align:right">3.51&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_trip_distance&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.24&lt;/td>
+&lt;td style="text-align:right">0.91&lt;/td>
+&lt;td style="text-align:right">3.55&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>check_total_amount&lt;/code>&lt;/td>
+&lt;td style="text-align:right">3.11&lt;/td>
+&lt;td style="text-align:right">0.93&lt;/td>
+&lt;td style="text-align:right">3.59&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>add_coordinate&lt;/code>&lt;/td>
+&lt;td style="text-align:right">28.32&lt;/td>
+&lt;td style="text-align:right">1.67&lt;/td>
+&lt;td style="text-align:right">16.97&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>in_NY&lt;/code>&lt;/td>
+&lt;td style="text-align:right">20.75&lt;/td>
+&lt;td style="text-align:right">2.71&lt;/td>
+&lt;td style="text-align:right">7.65&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">&lt;code>Preprocessing&lt;/code>&lt;/td>
+&lt;td style="text-align:right">186.02&lt;/td>
+&lt;td style="text-align:right">54.92&lt;/td>
+&lt;td style="text-align:right">3.39&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;code>file_read&lt;/code>についてpandasでは終了まで70秒以上かかっていたが約3.5秒となり20倍以上高速化ができていることが確認できた．
+またその他の時間がかかっていた処理（&lt;code>check_pu_date&lt;/code>，&lt;code>add_coordinate&lt;/code>）についても大幅な時間短縮ができている．&lt;/p>
+&lt;p>&lt;code>txt_to_date&lt;/code>についてはFireDucksを用いることで計算時間が増えている．
+これは記事執筆時点において&lt;code>to_datetime()&lt;/code>関数はFireDucksによる高速化対応がされていないためである．
+しかし，&lt;code>to_datetime()&lt;/code>のように高速化未対応な関数を呼ばれたときであってもFireDucksはpandasの関数を呼び出すことで計算を行うためエラーを返すことはない．&lt;/p>
+&lt;p>本記事の前処理計算においてトータルの計算時間はpandasが186秒であったのに対し，FireDucksでは55秒で約3.4倍の実行速度であった．
+さらにこの55秒のうち40秒程は高速化未対応の処理に要する時間であり，今後更なる高速化が見込まれる．&lt;/p></description></item><item><title>Posts: 導入事例：トヨタテクニカルディベロップメント株式会社様 「Spicy MINT」</title><link>https://fireducks-dev.github.io/ja/posts/ttdc/</link><pubDate>Wed, 19 Oct 2022 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/ttdc/</guid><description/></item></channel></rss>
