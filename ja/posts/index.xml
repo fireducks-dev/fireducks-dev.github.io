@@ -516,4 +516,4 @@ IDと地点の関係は以下で確認することができる．&lt;/p>
 これは記事執筆時点において&lt;code>to_datetime()&lt;/code>関数はFireDucksによる高速化対応がされていないためである．
 しかし，&lt;code>to_datetime()&lt;/code>のように高速化未対応な関数を呼ばれたときであってもFireDucksはpandasの関数を呼び出すことで計算を行うためエラーを返すことはない．&lt;/p>
 &lt;p>本記事の前処理計算においてトータルの計算時間はpandasが186秒であったのに対し，FireDucksでは55秒で約3.4倍の実行速度であった．
-さらにこの55秒のうち40秒程は高速化未対応の処理に要する時間であり，今後更なる高速化が見込まれる．&lt;/p></description></item><item><title>Posts: 導入事例：トヨタテクニカルディベロップメント株式会社様 「Spicy MINT」</title><link>https://fireducks-dev.github.io/ja/posts/ttdc/</link><pubDate>Wed, 19 Oct 2022 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/ttdc/</guid><description/></item></channel></rss>
+さらにこの55秒のうち40秒程は高速化未対応の処理に要する時間であり，今後更なる高速化が見込まれる．&lt;/p></description></item><item><title>Posts: 導入事例：トヨタテクニカルディベロップメント株式会社様 「Spicy MINT」</title><link>https://fireducks-dev.github.io/ja/posts/ttdc/</link><pubDate>Thu, 19 Oct 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/ttdc/</guid><description/></item></channel></rss>
