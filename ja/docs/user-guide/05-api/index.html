@@ -17,7 +17,7 @@ pandasとの変換 FireDucksのDataFrameやSeriesはto_pandasメソッドを持�
 groupbyの処理時間を計測する例を以下に示します．
 df = pd.read_csv(...)._evaluate() # read_csvが計測範囲に入らないように終わらせる t0 = time.time() # 時間計測開始 g = df.groupby(...).sum()._evaluate() # groupby用の中間言語を生成後，即座に実行 t1 = time.time() # 時間計測終了 特徴量生成用API データフレームの用途のひとつとして，機械学習の前処理である特徴量生成が挙げられます．より良いモデルを作成するには，往々にして，データフレームを様々な方法で加工して学習用の特徴量を生成する必要があり，処理時間が非常に長くなる場合があります．
 FireDucksは特徴量生成を高速に行うためのAPIも提供しています．現在は代表的な特徴量生成手法である以下のふたつの機能があります．これらの機能はpandasのAPIを組み合わせて実装することができますが，FireDucksでは単一のAPIとして提供されており，独自のチューニングがあらかじめ施されているため高速です．各APIの詳細はAPI Docを参照してください．
-集約特徴量: fireducks.pandas.aggregate マルチターゲットエンコーディング: fireducks.pandas.multi_target_encoding "><meta property="og:type" content="article"><meta property="og:url" content="https://fireducks-dev.github.io/ja/docs/user-guide/05-api/"><meta property="article:section" content="docs"><meta itemprop=name content="独自API"><meta itemprop=description content="FireDucksはpandasにはない独自のAPIをいくつか備えています．
+集約特徴量: fireducks.pandas.aggregate マルチターゲットエンコーディング: fireducks.pandas.multi_target_encoding "><meta property="og:type" content="article"><meta property="og:url" content="https://fireducks-dev.github.io/ja/docs/user-guide/05-api/"><meta property="og:image" content="https://fireducks-dev.github.io/images/fireducks.png"><meta property="article:section" content="docs"><meta itemprop=name content="独自API"><meta itemprop=description content="FireDucksはpandasにはない独自のAPIをいくつか備えています．
 pandasとの変換 FireDucksのDataFrameやSeriesはto_pandasメソッドを持っており，pandasのDataFrameやSeriesへ変換することができます．例えばpandasデータを受け取る外部ライブラリを利用する場合に便利です．
 また，pandasのDataFrameやSeriesをFireDucksのものに変換するには，fireducks.pandas.from_pandasが利用できます．
 明示的な中間言語の実行 FireDucksは遅延実行を行います．遅延実行は複数のAPIをまとめて実行することを可能にし，中間言語上での最適化による高速化に重要な機能となっています．
@@ -26,7 +26,7 @@ pandasとの変換 FireDucksのDataFrameやSeriesはto_pandasメソッドを持�
 groupbyの処理時間を計測する例を以下に示します．
 df = pd.read_csv(...)._evaluate() # read_csvが計測範囲に入らないように終わらせる t0 = time.time() # 時間計測開始 g = df.groupby(...).sum()._evaluate() # groupby用の中間言語を生成後，即座に実行 t1 = time.time() # 時間計測終了 特徴量生成用API データフレームの用途のひとつとして，機械学習の前処理である特徴量生成が挙げられます．より良いモデルを作成するには，往々にして，データフレームを様々な方法で加工して学習用の特徴量を生成する必要があり，処理時間が非常に長くなる場合があります．
 FireDucksは特徴量生成を高速に行うためのAPIも提供しています．現在は代表的な特徴量生成手法である以下のふたつの機能があります．これらの機能はpandasのAPIを組み合わせて実装することができますが，FireDucksでは単一のAPIとして提供されており，独自のチューニングがあらかじめ施されているため高速です．各APIの詳細はAPI Docを参照してください．
-集約特徴量: fireducks.pandas.aggregate マルチターゲットエンコーディング: fireducks.pandas.multi_target_encoding "><meta itemprop=wordCount content="37"><meta itemprop=keywords content><meta name=twitter:card content="summary"><meta name=twitter:title content="独自API"><meta name=twitter:description content="FireDucksはpandasにはない独自のAPIをいくつか備えています．
+集約特徴量: fireducks.pandas.aggregate マルチターゲットエンコーディング: fireducks.pandas.multi_target_encoding "><meta itemprop=wordCount content="37"><meta itemprop=image content="https://fireducks-dev.github.io/images/fireducks.png"><meta itemprop=keywords content><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://fireducks-dev.github.io/images/fireducks.png"><meta name=twitter:title content="独自API"><meta name=twitter:description content="FireDucksはpandasにはない独自のAPIをいくつか備えています．
 pandasとの変換 FireDucksのDataFrameやSeriesはto_pandasメソッドを持っており，pandasのDataFrameやSeriesへ変換することができます．例えばpandasデータを受け取る外部ライブラリを利用する場合に便利です．
 また，pandasのDataFrameやSeriesをFireDucksのものに変換するには，fireducks.pandas.from_pandasが利用できます．
 明示的な中間言語の実行 FireDucksは遅延実行を行います．遅延実行は複数のAPIをまとめて実行することを可能にし，中間言語上での最適化による高速化に重要な機能となっています．
