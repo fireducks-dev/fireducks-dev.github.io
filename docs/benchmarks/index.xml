@@ -1,1 +1,21 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Benchmarks</title><link>https://fireducks-dev.github.io/docs/benchmarks/</link><description>Recent content in Benchmarks on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><atom:link href="https://fireducks-dev.github.io/docs/benchmarks/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Benchmarks</title><link>https://fireducks-dev.github.io/docs/benchmarks/</link><description>Recent content in Benchmarks on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Tue, 06 Feb 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/docs/benchmarks/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Benchmark Archive</title><link>https://fireducks-dev.github.io/docs/benchmarks/archive/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/benchmarks/archive/</guid><description>
+&lt;h2 id="2024-01-12">2024-01-12&lt;/h2>
+&lt;p>Server Specs&lt;/p>
+&lt;ul>
+&lt;li>CPU: Intel(R) Xeon(R) Gold 5317 CPU @ 3.00GHz x 2sockets (48HW threads total)&lt;/li>
+&lt;li>Main memory: 256GB&lt;/li>
+&lt;/ul>
+&lt;h2 id="comparison-of-dataframe-libraries-using-tpc-h">Comparison of DataFrame libraries using TPC-H&lt;/h2>
+&lt;p>The following graph compares four data frame libraries (&lt;a href="https://pandas.pydata.org/">pandas&lt;/a>, &lt;a href="https://github.com/modin-project/modin">modin&lt;/a>, &lt;a href="https://pola.rs/">polars&lt;/a>, and fireducks) on 22 different queries included in the benchmark. The vertical axis shows how many times faster compared to pandas on a logarithmic scale, where anything greater than 1 indicates that it is faster than pandas. The Scale Factor, which represents the data size, is 10 (data set of about 10 GB), and the time spent on non-file IO is measured.&lt;/p>
+&lt;p>The average speedup over pandas for 22 queries was 1.8x for Modin, 12x for Polars, and 17x for FireDucks.&lt;/p>
+&lt;p>&lt;img src="../20240112/polars-tpch1.webp" alt="polars-tpch1">&lt;/p>
+&lt;p>The versions of the libraries used were as follows (the latest versions at the time of the measurements).&lt;/p>
+&lt;ul>
+&lt;li>pandas: 2.1.4&lt;/li>
+&lt;li>Modin: 0.26.0&lt;/li>
+&lt;li>Polars: 0.20.2&lt;/li>
+&lt;li>FireDucks: 0.9.3&lt;/li>
+&lt;/ul>
+&lt;p>For each query, the FireDucks development team implemented the program using pandas for pandas, modin, and FireDucks, and used it for modin and FireDucks with changing import statement. &lt;a href="https://github.com/pola-rs/tpch">polars/tpch&lt;/a> was used for Polars.&lt;/p>
+&lt;p>The following chart shows the comparison results between Polars and FireDucks with larger dataset, Scalar Factor 10, 20 and 50. The vertical axis shows how many times faster FireDucks is compared to Polars. On average, FireDucks is 1.4 times (sf=10), 1.4 times (sf=20), and 1.6 times (sf=50) faster than Polars.&lt;/p>
+&lt;p>&lt;img src="../20240112/polars-tpch2.webp" alt="polars-tpch2">&lt;/p></description></item></channel></rss>
