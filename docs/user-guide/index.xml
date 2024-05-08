@@ -113,6 +113,8 @@ should be used only when you want to measure individual methods.&lt;/p>
 &lt;li>The order of rows in merge/join results may not match the order in pandas. Sorting will match.&lt;/li>
 &lt;/ul>
 &lt;/li>
+&lt;li>copy(deep=False) might not work when changes made in data values of &amp;lsquo;copied&amp;rsquo; instance is expected to be reflected in the data values of the
+&amp;lsquo;source&amp;rsquo; instance. The changes made in the metadata will work as expected. &lt;a href="https://fireducks-dev.github.io/docs/user-guide/#copy(deep = False)">Refer&lt;/a> for more details.&lt;/li>
 &lt;/ul>
 &lt;h2 id="use-with-pandas">Use with pandas&lt;/h2>
 &lt;p>The internal API and &lt;code>isinstance&lt;/code> are frequently used in pandas. Therefore, &lt;strong>using FireDucks with pandas will not work in most cases.&lt;/strong> It is recommended to rewrite all import statements or use &lt;a href="https://fireducks-dev.github.io/docs/get-started/#import-hook">automatic conversion by import hook&lt;/a> to use FireDucks instead.&lt;/p>
