@@ -57,7 +57,30 @@ should be used only when you want to measure individual methods.&lt;/p>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t2 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;sorted.csv&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t3 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Docs: Acceleration in FireDucks</title><link>https://fireducks-dev.github.io/docs/user-guide/03-acceleration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/03-acceleration/</guid><description>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="point-to-be-noted">Point to be noted&lt;/h2>
+&lt;p>It is advised to refrain from using the conventional way of checking &lt;code>KeyError&lt;/code> using &lt;strong>try-catch block&lt;/strong>, when using
+FireDucks default mode of lazy-execution. For example, consider the below example:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">project&lt;/span>(df, cname):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> s &lt;span style="color:#f92672">=&lt;/span> df[cname]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">except&lt;/span> &lt;span style="color:#a6e22e">KeyError&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="color:#e6db74">f&lt;/span>&lt;span style="color:#e6db74">&amp;#34;Column &lt;/span>&lt;span style="color:#e6db74">{&lt;/span>cname&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74"> doesn&amp;#39;t exist in input dataframe&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> s
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Due to lazy-execution, &lt;code>s = df[cname]&lt;/code> will not actually be executed right after it is called.
+Hence the try-catch execution might not work as expected in this case. If you cannot avoid the above
+code structure due to some restriction, it is advised to call it as &lt;code>s = df[cname]._evaluate()&lt;/code> to
+enforce the statement to be executed at that very point.&lt;/p>
+&lt;p>Otherwise, it is advised to use more standard way to implement the above case as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">project&lt;/span>(df, cname):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> cname &lt;span style="color:#f92672">not&lt;/span> &lt;span style="color:#f92672">in&lt;/span> df:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="color:#e6db74">f&lt;/span>&lt;span style="color:#e6db74">&amp;#34;Column &lt;/span>&lt;span style="color:#e6db74">{&lt;/span>cname&lt;span style="color:#e6db74">}&lt;/span>&lt;span style="color:#e6db74"> doesn&amp;#39;t exist in input dataframe&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> s &lt;span style="color:#f92672">=&lt;/span> df[cname]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> s
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The &lt;code>in&lt;/code> operator invokes DataFrame.__contains__() which is a non-lazy method,
+since it returns the result to be either True or False and needs to be evaluated right
+after it is called.&lt;/p></description></item><item><title>Docs: Acceleration in FireDucks</title><link>https://fireducks-dev.github.io/docs/user-guide/03-acceleration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/user-guide/03-acceleration/</guid><description>
 &lt;p>There are two mechanisms to accelerate FireDucks. The first is &lt;a href="#compiler-accelerated">compiler optimization&lt;/a> on the IR, intermediate representation, and the second is &lt;a href="#multithreaded">multithreading&lt;/a> on the backend.&lt;/p>
 &lt;h3 id="compiler-accelerated">Compiler Optimization&lt;/h3>
 &lt;p>FireDucks uses a runtime compiler mechanism to convert Python programs into an intermediate language before execution. Optimization on the intermediate language means that the Python program is converted to an intermediate language that can be executed faster without changing the meaning of the program, rather than being executed as-is. This is equivalent to automatically performing the kind of tuning that a skilled programmer would perform when writing a program.&lt;/p>
@@ -138,7 +161,9 @@ modifies the data pointer as shown below to make it look like an in-place operat
 but (2) will not work as expected, since the change on copied instance is reflected on a newly allocated memory
 which is pointed by the &amp;lsquo;copied&amp;rsquo; instance (df2),
 but the &amp;lsquo;source&amp;rsquo; instance (df1) still points to the initial memory as depicted in following figure:
-&lt;img src="../shallow_copy_issue.jpg" alt="shallow_copy_issue">&lt;/p>
+&lt;img src="../shallow_copy_issue.jpg" alt="shallow_copy_issue">.&lt;/p>
+&lt;p>Usage similar to (1) can be found in some internal implementation of libraries like seaborn, skimpy etc.
+Hence you can &lt;strong>safely ignore the warning message&lt;/strong>, when using these libraries with import-hook enabled in FireDucks.&lt;/p>
 &lt;h2 id="use-with-pandas">Use with pandas&lt;/h2>
 &lt;p>The internal API and &lt;code>isinstance&lt;/code> are frequently used in pandas. Therefore, &lt;strong>using FireDucks with pandas will not work in most cases.&lt;/strong> It is recommended to rewrite all import statements or use &lt;a href="https://fireducks-dev.github.io/docs/get-started/#import-hook">automatic conversion by import hook&lt;/a> to use FireDucks instead.&lt;/p>
 &lt;p>If for some reason you wish to use FireDucks with pandas or pass DataFrame or Series of FireDucks to a library that accepts those of pandas, please use the &lt;a href="https://fireducks-dev.github.io/docs/user-guide/05-api/#pandas-conversion">pandas conversion function&lt;/a>.&lt;/p>
