@@ -8,7 +8,7 @@ where anything greater than 1 indicates that it is faster than pandas. The
 Scale Factor, which represents the data size, is 10 (dataset of about 10 GB),
 and the time spent on non-file IO was measured.</p><p>The average speedup over pandas for 22 queries was 1.2x for Modin, 16x for
 Polars, and <strong>27x for FireDucks</strong>.</p><p><img src=polars-tpch-sf10_20240605.webp alt=polars-tpch-sf10></p><p>The versions of the libraries used were as follows (the latest versions at the time of the measurements).</p><ul><li>pandas: 2.2.2</li><li>Modin: 0.30.0</li><li>Polars: 0.20.29</li><li>FireDucks: 0.11.4</li></ul><p>The following chart shows the comparison between Polars and FireDucks with
-larger dataset, Scalar Factor 10, 20 and 50. The vertical axis shows how many
+larger dataset, Scale Factor 10, 20 and 50. The vertical axis shows how many
 times faster FireDucks is compared to Polars. On average, <strong>FireDucks is 1.7
 times (sf=10), 1.7 times (sf=20), and 1.8 times (sf=50) faster than Polars</strong>.</p><p><img src=polars-tpch_20240605.webp alt=polars-tpch></p><h3 id=about-the-benchmark-code>About the benchmark code</h3><p>This benchmark is originally from
 <a href=https://github.com/pola-rs/tpch>polars/tpch</a>. Because this repository
