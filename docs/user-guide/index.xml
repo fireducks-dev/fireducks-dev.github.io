@@ -222,6 +222,7 @@ Hence you can &lt;strong>safely ignore the warning message&lt;/strong>, when usi
 Use &lt;code>%load_ext fireducks.ipyext&lt;/code> to load the ipython extension module and then apply the cell-magic as &lt;code>%%fireducks.profile&lt;/code> in the target cell you want to trace.&lt;/p>
 &lt;p>The following figure shows an example of the newly introduced magic-methods:&lt;/p>
 &lt;p>&lt;img src="../profile.png" alt="example_profile">&lt;/p>
+&lt;p>:point_right: (From FireDucks 0.12.2) &lt;code>fireducks.pandas&lt;/code> module internally loads &lt;code>fireducks.ipyext&lt;/code>. Therefore if &lt;code>fireducks.pandas&lt;/code> is already loaded as &lt;code>%load_ext fireducks.pandas&lt;/code>, then loading &lt;code>fireducks.ipyext&lt;/code> can be skipped.&lt;/p>
 &lt;p>By default the profile shows the top-10 methods based on the execution time.
 You may like to configure the same as follows: &lt;code>pd.options.styler.render.max_rows = &amp;lt;desired-number&amp;gt;&lt;/code>&lt;/p>
 &lt;p>If you find any method taking longer time due to fallback, you may either consider an alternative solution to avoid the fallback or
