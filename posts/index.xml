@@ -75,4 +75,171 @@ The graph shows that, with the exception of q10, the automatic selection algorit
 &lt;p>M. Bressan, E. Peserico, and L. Pretto. Simple set cardinality estimation through random sampling. CoRR, abs/1512.07901, 2015.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;/ol>
-&lt;/div></description></item><item><title>Posts: Application example: Spicy MINT at Toyota Technical Development Corporation</title><link>https://fireducks-dev.github.io/posts/ttdc/</link><pubDate>Thu, 19 Oct 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/ttdc/</guid><description/></item></channel></rss>
+&lt;/div></description></item><item><title>Posts: Application example: Spicy MINT at Toyota Technical Development Corporation</title><link>https://fireducks-dev.github.io/posts/ttdc/</link><pubDate>Thu, 19 Oct 2023 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/ttdc/</guid><description/></item><item><title>Posts:</title><link>https://fireducks-dev.github.io/posts/sourav_cse_demo_20240701/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/sourav_cse_demo_20240701/</guid><description>
+&lt;p>&lt;strong>Have you ever thought of speeding up your data analysis in pandas with a compiler?&lt;/strong>&lt;/p>
+&lt;p>In general, a Data Scientist spends significant efforts in transforming the raw data into a more
+digestible format before training an AI model or creating visualizations. Traditional tools such
+as pandas have long been the linchpin in this process, offering powerful capabilities but not
+without limitations.&lt;/p>
+&lt;p>With the pitfall of its single-core implementation and inefficient data structures,
+often we face performance issues when dealing with pandas for relatively larger data,
+but its performance is also highly impacted by the choice of APIs, their parameters and execution orders.
+Sometime an efficient writing of a pandas application can itself make it 10-20x faster.&lt;/p>
+&lt;p>In this article, I will discuss a few commonly used examples picked up from some pandas applications.&lt;/p>
+&lt;h2 id="notebook-example-01">:notebook: Example 01&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>DataFrame()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>Series([&lt;span style="color:#e6db74">&amp;#34;2020-10-10&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;2021-11-20&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;2022-08-03&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;2023-07-04&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;year&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>to_datetime(s)&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>year
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;month&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>to_datetime(s)&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>month
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;day&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>to_datetime(s)&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>day
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>We can clearly identify the major issue with the above code is using the expression, &lt;code>pd.to_datetime(s)&lt;/code> three times.
+The purpose is to extract the year, month and day fields from the series data (s) of type &amp;ldquo;datetime64[ns]&amp;rdquo;.
+The method to_datetime() attempts to parse the input string column in order to convert it to a datetime column
+(along with inferring the format if not specified). Such parsing itself is very expensive when performed on a large data
+and if the same expression on the same input is written more than one time, its very obvious that the program will
+experience a significant performance issue.&lt;/p>
+&lt;p>As you might have clearly figured out, an optimized solution to this problem could be:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>DataFrame()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>Series([&lt;span style="color:#e6db74">&amp;#34;2020-10-10&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;2021-11-20&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;2022-08-03&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;2023-07-04&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>dt_s &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>to_datetime(s)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;year&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> dt_s&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>year
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;month&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> dt_s&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>month
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df[&lt;span style="color:#e6db74">&amp;#34;day&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> dt_s&lt;span style="color:#f92672">.&lt;/span>dt&lt;span style="color:#f92672">.&lt;/span>day
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This is a very basic example which can be manually optimized, if reviewed carefully after an application is developed.
+Let&amp;rsquo;s take another example which is very common when performing an extensive data analysis.&lt;/p>
+&lt;h2 id="notebook-example-02">:notebook: Example 02&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>res &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>DataFrame()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># To find industry-wise average salary of an Indian employee&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res[&lt;span style="color:#e6db74">&amp;#34;industry_wise_avg_sal&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> employee[employee[&lt;span style="color:#e6db74">&amp;#34;country&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;India&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;industry&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;salary&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>mean()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># To find industry-wise average salary of an Indian employee who are above 30&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res[&lt;span style="color:#e6db74">&amp;#34;industry_wise_avg_sal_for_specific_age_group&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> employee[(employee[&lt;span style="color:#e6db74">&amp;#34;country&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;India&amp;#34;&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> (employee[&lt;span style="color:#e6db74">&amp;#34;age&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">30&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;industry&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;salary&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>mean()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(res)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Both of these queries have a common expression to be evaluated during the filter operation, i.e.,
+checking whether the employee belongs to India (comparison on String column is itself very costly than comparison on numeric columns).
+Now, imagine if we are dealing with an extensively large employee database, then evaluating &lt;code>employee[&amp;quot;country&amp;quot;] == &amp;quot;India&amp;quot;&lt;/code> for two
+times can be quite an expensive operation that can easily be optimized with the same strategy as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># To generate the required filtration masks in advance&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cond1 &lt;span style="color:#f92672">=&lt;/span> (employee[&lt;span style="color:#e6db74">&amp;#34;country&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;India&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cond2 &lt;span style="color:#f92672">=&lt;/span> (employee[&lt;span style="color:#e6db74">&amp;#34;age&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">30&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>DataFrame()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># To find industry-wise average salary of an Indian employee&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res[&lt;span style="color:#e6db74">&amp;#34;industry_wise_avg_sal&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> employee[cond1]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;industry&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;salary&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>mean()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># To find industry-wise average salary of an Indian employee who are above 30&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res[&lt;span style="color:#e6db74">&amp;#34;industry_wise_avg_sal_for_specific_age_group&amp;#34;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> employee[cond1 &lt;span style="color:#f92672">&amp;amp;&lt;/span> cond2]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;industry&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;salary&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>mean()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(res)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>In compiler technology, such optimization is called as
+&lt;strong>&lt;a href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">common sub-expression elimination (CSE)&lt;/a>&lt;/strong> and
+can essentially be performed by a smart compiler in programming language like C/C++.&lt;/p>
+&lt;h2 id="notebook-example-03">:notebook: Example 03&lt;/h2>
+&lt;p>Let&amp;rsquo;s take another example of a compiler optimization technique:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">func&lt;/span>(x: pd&lt;span style="color:#f92672">.&lt;/span>DataFrame, y: pd&lt;span style="color:#f92672">.&lt;/span>DataFrame):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> merged &lt;span style="color:#f92672">=&lt;/span> x&lt;span style="color:#f92672">.&lt;/span>merge(y, on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;key&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sorted &lt;span style="color:#f92672">=&lt;/span> merged&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;key&amp;#34;&lt;/span>) &lt;span style="color:#75715e"># is never used&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> merged&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;key&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>max()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The method is trying to merge two input tables, x and y followed by a groupby-aggregate operation.
+The &amp;ldquo;sort&amp;rdquo; operation is also a part of the method after merging the tables, but it is actually not
+required from the method context (since the sorted result is never used within the method).
+Sometime when we focus on very detail exploration of the input data, it is very common that such piece of
+unwanted code remains in our application resulting a significant performance cost.&lt;/p>
+&lt;p>Hence, an optimized solution to the above method could be:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">func&lt;/span>(x: pd&lt;span style="color:#f92672">.&lt;/span>DataFrame, y: pd&lt;span style="color:#f92672">.&lt;/span>DataFrame):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> merged &lt;span style="color:#f92672">=&lt;/span> x&lt;span style="color:#f92672">.&lt;/span>merge(y, on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;key&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> merged&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;key&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>max()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>In compiler technology, such optimization is called as
+&lt;strong>&lt;a href="https://en.wikipedia.org/wiki/Dead-code_elimination">dead code elimination&lt;/a>&lt;/strong> and
+is very important from the overall performance point of view of any application.&lt;/p>
+&lt;p>An expert programmer might take care of such cases while developing his data analysis solutions, but as a data analyst our
+primary focus is to explore more about the data from different verticals and horizontals to find out meaningful insights
+while solving some business problems or creating important features for our training data. Hence we often miss to take care
+of such issues. Nowadays, there are many good linters that will point out such issues, so a manual optimization is definitely
+possible if you include the linter execution step as part of your TODO action when developing an application.&lt;/p>
+&lt;h2 id="point_right-new-information-alert">:point_right: New Information alert!&lt;/h2>
+&lt;p>Let&amp;rsquo;s now talk about an ideal scenario!&lt;/p>
+&lt;p>How would it be if such optimization is automatically taken care by the python data manipulation library we use?&lt;/p>
+&lt;p>It can save us from taking care of such issues by ourselves and can significantly improve the performance of our application, right?&lt;/p>
+&lt;p>Well, the wait is over! Let me introduce a high-performance DataFrame library,
+named &lt;strong>&lt;a href="https://fireducks-dev.github.io/">FireDucks&lt;/a>&lt;/strong> with highly compatible pandas APIs,
+powered by &lt;a href="https://mlir.llvm.org/">MLIR（Multi-Level Intermediate Representation)&lt;/a>
+framework to have such powerful compiler optimization abilities.&lt;/p>
+&lt;p>The library is carefully developed at NEC R&amp;amp;D laboratory over last 3 years and is freely available to be installed using
+&amp;ldquo;pip&amp;rdquo; under BSD licence since October, 2023.&lt;/p>
+&lt;h2 id="fire-bird-what-does-it-offer">:fire: :bird: What does it offer?&lt;/h2>
+&lt;p>FireDucks is developed with the following points in mind:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>Automatic query optimization ability with lazy-execution model.&lt;/p>
+&lt;ul>
+&lt;li>A data analyst can focus more on exploring data, while the inbuilt compiler of FireDucks can take care of the following:
+&lt;ol>
+&lt;li>basic compiler optimizations, like common sub-expression elimination, dead code elimination etc.&lt;/li>
+&lt;li>domain specific optimizations, like execution reordering, dropping unwanted columns in advance etc.&lt;/li>
+&lt;li>pandas specific optimizations, like choice of right APIs when executing a query (by careful analysis of the application objective), choice of right parameters by avoiding unwanted operations (like sorting of result etc.)&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>A pandas user can flexibly adapt to this library without any new learning cost.&lt;/p>
+&lt;ul>
+&lt;li>FireDucks is highly compatible with pandas, so any pandas application can be optimized without any manual code changes. Doesn&amp;rsquo;t it sound quite promising?&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>The program can leverage all the available cores in the execution environment:&lt;/p>
+&lt;ul>
+&lt;li>The single-core execution issue in pandas is solved!&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="computer-demonstration">:computer: Demonstration&lt;/h2>
+&lt;p>Here is a &lt;a href="https://colab.research.google.com/drive/1mPv6kuOlWckubPBuCaUgmTg0Ip6zQAuO?usp=sharing">link&lt;/a> for a test drive with
+a sample walkthrough notebook on Google Colab which shows how easy it is to start with FireDucks and its performance gain over
+pandas for a sample CSE use-case (Example 01 of this article).&lt;/p>
+&lt;p>With a low-spec execution environment having 2 cores, where pandas takes 1.3 seconds to execute a sample query,
+FireDucks (with multhreaded + compiler enabled) takes only 166 milli-seconds.
+Such speedup (~8x) without incurring any migration cost (no cost involves in rewritting the application from
+pandas to FireDucks) or any special hardware cost seems quite beneficial from the overall production cost point of view.&lt;/p>
+&lt;p>In case you are interested to see how it performs for popular benchmarks (like TPC-H, db-benchmark etc.) in comparison to
+other high-performance pandas alternatives, you may like to check &lt;a href="https://fireducks-dev.github.io/docs/benchmarks/">this&lt;/a> out.&lt;/p>
+&lt;h2 id="point_right-how-does-fireducks-work">:point_right: How does FireDucks work?&lt;/h2>
+&lt;p>FireDucks comes with three powerful layers:&lt;/p>
+&lt;ul>
+&lt;li>a python frontend highly compatible with pandas APIs&lt;/li>
+&lt;li>an in-built compiler to auto-detect and optimize the exsting performance issues in a user program&lt;/li>
+&lt;li>a multithreaded C++ backend with efficient parallel implementation of all the dataframe related operations like join, filter, groupby sort etc.&lt;/li>
+&lt;/ul>
+&lt;p>Unlike pandas that executes the library functions right after they are called, FireDucks creates some special instructions and keep them accumulated until there is some explicit request for the result (print result, do some reduction, to_csv etc.). Before the execution, the in-built compiler inspects all the accumulated instructions related to the result to be processed and performs some automatic optimization (as explained above) and then the optimized instructions are executed at the multithreaded kernel backend helping us to focus more on our analytical work and be more productive.&lt;/p>
+&lt;p>&lt;img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/2917078/9d3e5cf5-048c-889e-9efd-ac60f4c3e924.png" alt="pandas_fireducks_exec_model.png">&lt;/p>
+&lt;h1 id="-conclusion">✍️ Conclusion&lt;/h1>
+&lt;p>FireDucks shows promise by taking care of all the drawbacks associated with pandas and
+its compiler optimization technology makes it one of its kind. This article introduces FireDucks basic compilation optimization
+abilities as mentioned in (a). In upcoming articles, I will demonstrate other powerful optimization areas (b and c)
+automatically taken care of by FireDucks. If you like this article, please be with me to check them out as well.
+You may like to try FireDucks and share your feedback. I would love to answer to whatever queries you may have
+in mind with the best of my knowledge. The development team is very active and there is a new release almost
+every week with performance improvements, new features based on user requests, bug fixes etc.
+You may like to get in touch with them directly through the
+&lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">slack channel&lt;/a>.&lt;/p>
+&lt;p>You may also like to checkout one of my previous &lt;a href="https://qiita.com/qsourav/items/e87f25c4b307391d784a">articles&lt;/a> on FireDucks salient features.&lt;/p></description></item></channel></rss>
