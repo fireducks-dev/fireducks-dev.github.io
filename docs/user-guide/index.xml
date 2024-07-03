@@ -198,9 +198,9 @@ Hence you can &lt;strong>safely ignore the warning message&lt;/strong>, when usi
 &lt;p>Looping out data from a DataFrame is slow, so it is better to use the DataFrame API as much as possible (this is also true for pandas).&lt;/p>
 &lt;p>For example, the following loop processes the elements of a Series one by one.&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(len(df)): &lt;span style="color:#66d9ef">if&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>][i] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>: s &lt;span style="color:#f92672">+=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>][i] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> s &lt;span style="color:#f92672">+=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>][i]&lt;span style="color:#f92672">.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(len(df)):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>][i] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> s &lt;span style="color:#f92672">+=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>][i]
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Using the API, you can write the following.&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The same applies to &lt;code>Dataframe.iterrows&lt;/code> and so on.&lt;/p>
@@ -218,12 +218,20 @@ Hence you can &lt;strong>safely ignore the warning message&lt;/strong>, when usi
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="avoid-fallback">Avoid Fallback&lt;/h2>
 &lt;p>FireDucks has a feature called fallback that calls pandas internally. This is a feature to improve pandas compatibility by using pandas to perform functions not currently supported by FireDucks. On the other hand, this is a disadvantage in terms of execution time and memory usage, since it involves converting the FireDucks data structure to pandas, executing the pandas method, and then converting it to the FireDucks data structure again.&lt;/p>
 &lt;p>We are continuously working to reduce fallbacks, but it is also effective to improve performance by avoiding fallbacks in user programs. The environment variable &lt;code>FIREDUCKS_FLAGS=&amp;quot;-Wfallback&amp;quot;&lt;/code> can be used to log when fallbacks occur.&lt;/p>
-&lt;p>👉 From &lt;strong>FireDucks 0.10.9&lt;/strong>, we have provided some magic methods to profile the execution time of each frame/series related methods when running from Jupyter Notebook.
+&lt;h2 id="profiling-kernel-wise-performance-when-using-notebook">Profiling kernel-wise performance when using notebook&lt;/h2>
+&lt;p>From &lt;strong>FireDucks 0.10.9&lt;/strong>, we have provided some magic methods to profile the execution time of each frame/series related methods when running from Jupyter Notebook.
 Use &lt;code>%load_ext fireducks.ipyext&lt;/code> to load the ipython extension module and then apply the cell-magic as &lt;code>%%fireducks.profile&lt;/code> in the target cell you want to trace.&lt;/p>
 &lt;p>The following figure shows an example of the newly introduced magic-methods:&lt;/p>
 &lt;p>&lt;img src="../profile.png" alt="example_profile">&lt;/p>
-&lt;p>👉 From &lt;strong>FireDucks 0.12.2&lt;/strong>, &lt;code>fireducks.pandas&lt;/code> module internally loads &lt;code>fireducks.ipyext&lt;/code>. Therefore if &lt;code>fireducks.pandas&lt;/code> is already loaded as &lt;code>%load_ext fireducks.pandas&lt;/code>, then loading &lt;code>fireducks.ipyext&lt;/code> can be skipped.&lt;/p>
+&lt;p>📢 From &lt;strong>FireDucks 0.12.2&lt;/strong>, &lt;code>fireducks.pandas&lt;/code> module internally loads &lt;code>fireducks.ipyext&lt;/code>. Therefore if &lt;code>fireducks.pandas&lt;/code> is already loaded as &lt;code>%load_ext fireducks.pandas&lt;/code>, then loading &lt;code>fireducks.ipyext&lt;/code> can be skipped.&lt;/p>
 &lt;p>By default the profile shows the top-10 methods based on the execution time.
 You may like to configure the same as follows: &lt;code>pd.options.styler.render.max_rows = &amp;lt;desired-number&amp;gt;&lt;/code>&lt;/p>
+&lt;p>⚠ Please do not use any import statement within the cell that is to be profiled using cell-magic: &lt;code>%%fireducks.profile&lt;/code>.
+You may like to import the required libraries/modules in some different cell.&lt;/p>
+&lt;h2 id="128073-measurement-for-expensive-fallback">👉 Measurement for expensive fallback&lt;/h2>
 &lt;p>If you find any method taking longer time due to fallback, you may either consider an alternative solution to avoid the fallback or
-you may like to &lt;a href="https://github.com/fireducks-dev/fireducks/issues">report us&lt;/a> for supporting the method with a reproducible example.&lt;/p></description></item></channel></rss>
+you may like to &lt;a href="https://github.com/fireducks-dev/fireducks/issues">report us&lt;/a> for supporting the method with a reproducible example.&lt;/p>
+&lt;p>Also, when executing a python program, you may like to set the environment variable &lt;code>FIREDUCKS_FLAGS=&amp;quot;--trace=3&amp;quot;&lt;/code>.
+This will produce a file named, &lt;code>trace.json&lt;/code> containing several traces related to your program performance in the current working directory.
+If you like to share that json file with us (it doesn&amp;rsquo;t contain any confidential information related to your data),
+we will look into the areas for improvement and may suggest you corrective measures.&lt;/p></description></item></channel></rss>
