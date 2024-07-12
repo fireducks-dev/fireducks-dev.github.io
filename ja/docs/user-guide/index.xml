@@ -57,7 +57,7 @@
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>to_csv(&lt;span style="color:#e6db74">&amp;#34;sorted.csv&amp;#34;&lt;/span>)&lt;span style="color:#f92672">.&lt;/span>_evaluate()
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t3 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time()
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>ただし，このようにすると実行が細切れとなるため，FireDucksが複数の処理をまとめて最適化する機能が働きにくくなることに注意してください．そのため&lt;code>_evaluate&lt;/code>の利用は個別のメソッドの時間計測を行う場合だけにしたほうが良いでしょう．&lt;/p></description></item><item><title>Docs: 高速化の仕組み</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/03-acceleration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/03-acceleration/</guid><description>
-&lt;p>FireDucksの高速化の仕組みはふたつあります．ひとつめは中間言語上での&lt;a href="#compiler-accelerated">コンパイラ最適化&lt;/a>，ふたつめはバックエンドによる&lt;a href="#multithreaded">マルチスレッド高速化&lt;/a>です．&lt;/p>
+&lt;p>FireDucksの高速化の仕組みはふたつあります．ひとつめは中間言語上での&lt;a href="#compiler-accelerated">コンパイラ最適化&lt;/a>，ふたつめはバックエンドによる&lt;a href="#multithreading">マルチスレッド高速化&lt;/a>です．&lt;/p>
 &lt;h3 id="compiler-accelerated">コンパイラ最適化&lt;/h3>
 &lt;p>FireDucksでは実行時コンパイラの仕組みを使い，Pythonプログラムを中間言語に変換してから実行します．中間言語上での最適化とは，Pythonプログラムから変換された中間言語をそのまま実行するのではなく，プログラムの意味を変えない範囲で，より効率的に実行することができる計算方法に処理を変換することです．これは熟練者がプログラムを書くときに行うようなチューニングを自動で行うことに相当します．&lt;/p>
 &lt;p>FireDucksの中間言語はデータフレーム専用に設計されており，中間言語上の各命令は，データフレームに対する操作を表した抽象度が高く情報量の多い命令となっています．そのためFireDucksが搭載する実行時コンパイラは，プログラムの意味を俯瞰的に把握することができ，データフレーム処理に特化した最適化を行うことが可能なのです．&lt;/p>
@@ -69,7 +69,7 @@
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>tmp &lt;span style="color:#f92672">=&lt;/span> df[[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]]
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>selected &lt;span style="color:#f92672">=&lt;/span> tmp[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">10&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>]
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>データフレームの内部構造を知る熟練者であれば，こちらのようなコードを好むでしょう．FireDucksは中間言語上での最適化としてこのような変換を自動で行います．&lt;/p>
-&lt;h3 id="multithreaded">マルチスレッド高速化&lt;/h3>
+&lt;h3 id="multithreading">マルチスレッド高速化&lt;/h3>
 &lt;p>FireDucksでは，ユーザーが利用するAPIとその実行は中間言語を境目として完全に独立しています．中間言語の命令の実行を担当する部分をバックエンドと呼び，バックエンドがデータフレームの具体的なデータ構造や演算を行う機能を持っています．&lt;/p>
 &lt;p>FireDucksはバックエンドを変更できるようになっており，例えばマルチコアCPU用にチューニングされたバックエンド，GPUなどのアクセラレーターを使ったバックエンドなどのように，ターゲット環境に合わせたバックエンドを利用することで高速化を行うことができます．また，バックエンドの変更は環境変数によって行うことができ，ユーザープログラムを全く変更せずにバックエンドを切り替えることができます．&lt;/p>
 &lt;p>FireDucksベータ版には，CPU用にマルチスレッド化されたバックエンドが含まれています．このバックエンドは，データ構造としてApache Arrowを採用し，Apache Arrowが提供するデータフレーム操作に加えて，独自の最適化を施した並列処理機能を備えています．&lt;/p></description></item><item><title>Docs: pandas互換性</title><link>https://fireducks-dev.github.io/ja/docs/user-guide/04-compatibility/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/user-guide/04-compatibility/</guid><description>

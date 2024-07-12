@@ -1,36 +1,13 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Help</title><link>https://fireducks-dev.github.io/ja/docs/help/</link><description>Recent content in Help on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><atom:link href="https://fireducks-dev.github.io/ja/docs/help/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: FAQ</title><link>https://fireducks-dev.github.io/ja/docs/help/faq/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/help/faq/</guid><description>
 &lt;ul>
-&lt;li>ベータ版について
+&lt;li>FireDucksが使ってるデータフォーマットは？
 &lt;ul>
-&lt;li>FireDucksベータ版は無償で利用できますか？
-&lt;ul>
-&lt;li>できます&lt;/li>
+&lt;li>FireDucksの&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/03-acceleration/#multithreading">CPU用にマルチスレッド化されたバックエンド&lt;/a>は&lt;a href="https://arrow.apache.org/">Apache Arrow&lt;/a>と使っています&lt;/li>
 &lt;/ul>
 &lt;/li>
-&lt;li>FireDucksベータ版を商用利用できますか？
+&lt;li>FireDucksのライセンスは？
 &lt;ul>
-&lt;li>できます&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>FireDucksベータ版はOSSですか？
-&lt;ul>
-&lt;li>違います&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>正式版について
-&lt;ul>
-&lt;li>FireDucks正式版のリリース日程は決まっていますか？
-&lt;ul>
-&lt;li>決まっていません&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>FireDucks正式版のライセンスは決まっていますか？
-&lt;ul>
-&lt;li>決まっていません&lt;/li>
-&lt;/ul>
-&lt;/li>
+&lt;li>The 3-Clause BSD Licenseです．&lt;/li>
 &lt;/ul>
 &lt;/li>
 &lt;li>対応プラットフォームについて

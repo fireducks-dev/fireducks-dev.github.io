@@ -1,36 +1,13 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Help</title><link>https://fireducks-dev.github.io/docs/help/</link><description>Recent content in Help on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><atom:link href="https://fireducks-dev.github.io/docs/help/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: FAQ</title><link>https://fireducks-dev.github.io/docs/help/faq/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/help/faq/</guid><description>
 &lt;ul>
-&lt;li>About the beta version
+&lt;li>What is the data format FireDucks internally uses.
 &lt;ul>
-&lt;li>Is FireDucks beta available for free?
-&lt;ul>
-&lt;li>Yes&lt;/li>
+&lt;li>FireDucks &lt;a href="https://fireducks-dev.github.io/docs/user-guide/03-acceleration/#multithreading">multithreaded CPU backend&lt;/a> uses &lt;a href="https://arrow.apache.org/">Apache Arrow&lt;/a>.&lt;/li>
 &lt;/ul>
 &lt;/li>
-&lt;li>Can I use FireDucks beta for commercial purposes?
+&lt;li>What is the lincense of FireDucks:
 &lt;ul>
-&lt;li>Yes&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>Is FireDucks beta OSS?
-&lt;ul>
-&lt;li>No&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>About the release to manufacturing (RTM) version
-&lt;ul>
-&lt;li>When will the RTM version of FireDucks be released?
-&lt;ul>
-&lt;li>Not determined yet&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>What will the license be applied for the RTM version of FireDucks?
-&lt;ul>
-&lt;li>Not determined yet&lt;/li>
-&lt;/ul>
-&lt;/li>
+&lt;li>The 3-Clause BSD License&lt;/li>
 &lt;/ul>
 &lt;/li>
 &lt;li>About supported platforms
