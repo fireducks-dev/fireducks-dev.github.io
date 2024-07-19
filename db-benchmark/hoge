@@ -1,0 +1,13 @@
+    <div id="header">
+      <p style="background: lightgray; margin: 10px; padding: 5px; border-radius: 3px">
+      <b>Note:</b>
+         The content of this web page follows that published at <a
+          href="https://duckdblabs.github.io/db-benchmark/">https://duckdblabs.github.io/db-benchmark/</a>, with the
+        addition of evaluation results using <a href="https://fireducks-dev.github.io/">FireDucks</a> library.
+        The code for this benchmark can be found at <a href="https://github.com/fireducks-dev/db-benchmark">https://github.com/fireducks-dev/db-benchmark</a>.
+        We would like to express our deepest gratitude to the engineers at DuckDB Labs for creating such a great
+        benchmark for database-like operations &#x1f917;.
+
+      <h1 class="title toc-ignore">Database-like ops benchmark</h1>
+
+    </div>
