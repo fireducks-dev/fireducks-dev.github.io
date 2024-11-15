@@ -1,4 +1,35 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Thu, 19 Sep 2024 00:00:00 +0900</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Workshop at Bangalore, India</title><link>https://fireducks-dev.github.io/posts/20240919-workshop/</link><pubDate>Thu, 19 Sep 2024 00:00:00 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/20240919-workshop/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Mon, 11 Nov 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: What to do when FireDucks is slow</title><link>https://fireducks-dev.github.io/posts/beginner_guide/</link><pubDate>Mon, 11 Nov 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/beginner_guide/</guid><description>
+&lt;h2 id="what-to-do-when-fireducks-is-slow">What to do when FireDucks is slow&lt;/h2>
+&lt;p>Thank you for your interest in FireDucks.
+&lt;!-- raw HTML omitted -->This article describes possible causes and remedies for slow programs using FireDucks.&lt;/p>
+&lt;p>When a pandas program with FireDucks applied is slow, the reason may be the followings.&lt;/p>
+&lt;ol>
+&lt;li>Using &amp;lsquo;apply&amp;rsquo; or &amp;rsquo;loop&amp;rsquo;.&lt;/li>
+&lt;li>Using pandas API not implemented in FireDucks.&lt;/li>
+&lt;/ol>
+&lt;p>In the case of 1, if you change the pandas program, the program may become faster.
+&lt;!-- raw HTML omitted -->
+For example,&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>sum_val &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">for&lt;/span> i &lt;span style="color:#f92672">in&lt;/span> range(len(df)):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>][i] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sum_val &lt;span style="color:#f92672">+=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>][i]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>A program using &amp;rsquo;loop&amp;rsquo; like the one above can be faster by writing it like the one below.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>sum_val &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">2&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>If you have difficulty in confirming by yourself, or if the source code is too complicated to find suitable modification methods, please feel free to ask for help from the FireDucks community via the slack listed below.&lt;/p>
+&lt;p>In the case of 2, we cannot immediately speed up the program, but by reporting unimplemented pandas API in FireDucks, we will implement them and speed up the program in the future.&lt;/p>
+&lt;p>Please set environment variables to determine if FireDucks implements the functionality you need for your pandas program.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;-Wfallback&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>After setting the environment variables, please run the program.
+If you see the word “Fallback” in the pandas function, it would be helpful if you could report it.&lt;/p>
+&lt;p>If you would like to report a problem, please contact us by any of the following methods.&lt;/p>
+&lt;p>🦆github : &lt;a href="https://github.com/fireducks-dev/fireducks/issues/new">https://github.com/fireducks-dev/fireducks/issues/new&lt;/a>
+&lt;!-- raw HTML omitted -->
+📧mail : &lt;a href="mailto:contact@fireducks.jp.nec.com">contact@fireducks.jp.nec.com&lt;/a>
+&lt;!-- raw HTML omitted -->
+🤝slack : &lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w&lt;/a>&lt;/p>
+&lt;p>Please feel free to contact us even if you have difficulty in researching Fallback.&lt;/p>
+&lt;p>This concludes this article. Thank you for reading.&lt;/p></description></item><item><title>Posts: Workshop at Bangalore, India</title><link>https://fireducks-dev.github.io/posts/20240919-workshop/</link><pubDate>Thu, 19 Sep 2024 00:00:00 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/20240919-workshop/</guid><description>
 &lt;p>We had a workshop on FireDucks with faculties from universities around Bangalore.
 Thank you for joining and discussion.&lt;/p>
 &lt;p>&lt;img src="photo.webp" alt="image">&lt;/p></description></item><item><title>Posts: Have you ever thought of speeding up your data analysis in pandas with a compiler?</title><link>https://fireducks-dev.github.io/posts/sourav_cse_demo_20240701/</link><pubDate>Mon, 01 Jul 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/sourav_cse_demo_20240701/</guid><description>
