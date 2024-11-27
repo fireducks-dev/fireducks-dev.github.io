@@ -23,11 +23,11 @@ For example,&lt;/p>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>After setting the environment variables, please run the program.
 If you see the word “Fallback” in the pandas function, it would be helpful if you could report it.&lt;/p>
 &lt;p>If you would like to report a problem, please contact us by any of the following methods.&lt;/p>
-&lt;p>🦆github : &lt;a href="https://github.com/fireducks-dev/fireducks/issues/new">https://github.com/fireducks-dev/fireducks/issues/new&lt;/a>
-&lt;!-- raw HTML omitted -->
-📧mail : &lt;a href="mailto:contact@fireducks.jp.nec.com">contact@fireducks.jp.nec.com&lt;/a>
-&lt;!-- raw HTML omitted -->
-🤝slack : &lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w&lt;/a>&lt;/p>
+&lt;ul>
+&lt;li>🦆github : &lt;a href="https://github.com/fireducks-dev/fireducks/issues/new">https://github.com/fireducks-dev/fireducks/issues/new&lt;/a>&lt;/li>
+&lt;li>📧mail : &lt;a href="mailto:contact@fireducks.jp.nec.com">contact@fireducks.jp.nec.com&lt;/a>&lt;/li>
+&lt;li>🤝slack : &lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w&lt;/a>&lt;/li>
+&lt;/ul>
 &lt;p>Please feel free to contact us even if you have difficulty in researching Fallback.&lt;/p>
 &lt;p>This concludes this article. Thank you for reading.&lt;/p></description></item><item><title>Posts: Workshop at Bangalore, India</title><link>https://fireducks-dev.github.io/posts/20240919-workshop/</link><pubDate>Thu, 19 Sep 2024 00:00:00 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/20240919-workshop/</guid><description>
 &lt;p>We had a workshop on FireDucks with faculties from universities around Bangalore.
