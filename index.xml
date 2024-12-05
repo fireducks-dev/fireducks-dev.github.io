@@ -1,4 +1,216 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Mon, 11 Nov 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Import hooks: how to use FireDucks without modifying your programs</title><link>https://fireducks-dev.github.io/posts/importhook/</link><pubDate>Wed, 15 Nov 2023 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/importhook/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Thu, 05 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Unveiling the Optimization Benefit of FireDucks Lazy Execution: Part #1</title><link>https://fireducks-dev.github.io/posts/lazy_execution_offering_part1/</link><pubDate>Thu, 05 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/lazy_execution_offering_part1/</guid><description>
+&lt;p>The availability of runtime memory is often a challenge faced at processing larger-than-memory-dataset while working with pandas.
+To solve the problem, one can either shift to a system with larger memory capacity or consider switching to alternative libraries supporting distributed data processing like (Dask, PySpark etc.).&lt;/p>
+&lt;p>Well, do you know when working with data stored in columnar formats like csv, parquet etc. and only some part of data is to be processed, manual optimization is possible even in pandas?
+For example, let&amp;rsquo;s consider the below data is stored in a parquet file, named sample_data.parquet (or in a csv file, named sample_data.csv):&lt;/p>
+&lt;pre tabindex="0">&lt;code> a b c x y z
+0 1 0.1 1 0 t1 10
+1 2 0.2 4 1 t2 20
+2 3 0.3 9 1 t3 30
+3 4 0.4 16 0 t1 40
+4 5 0.5 25 1 t2 50
+5 6 0.6 36 1 t1 60
+6 7 0.7 49 0 t2 70
+7 8 0.8 64 1 t3 80
+&lt;/code>&lt;/pre>&lt;p>And you want to perform sum of &amp;ldquo;c&amp;rdquo; column, when the value of &amp;ldquo;x&amp;rdquo; column is 1. You may simply write the program as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;sample_data.parquet&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum() &lt;span style="color:#75715e"># filter data based on condition and calculate sum of &amp;#34;c&amp;#34; column from filtered frame&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print (res)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Now the problem may occur when the parquet file is too large to fit in your system memory, although you are interested only a part of it (column &amp;ldquo;x&amp;rdquo; and &amp;ldquo;c&amp;rdquo;).
+Thankfully, read_parquet() method has a parameter named &lt;code>columns&lt;/code> and you can specify the target columns to be loaded from the input parquet file:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;sample_data.parquet&amp;#34;&lt;/span>, columns &lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res &lt;span style="color:#f92672">=&lt;/span> df[df[&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>][&lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum() &lt;span style="color:#75715e"># filter data based on condition and calculate sum of &amp;#34;c&amp;#34; column from filtered frame&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print (res)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Similarly, read_csv() has a parameter, named &lt;code>usecols&lt;/code> that can be specified when loading only target columns from a CSV file.&lt;/p>
+&lt;h2 id="fireducks-offerings">FireDucks Offerings&lt;/h2>
+&lt;p>Although such parameters can be specified to optimize runtime memory consumption when using pandas, it
+might be difficult to know what all columns are required at the very begining of analysing the data.
+An automatic optimization for such cases would definitely be useful for users of pandas-like libraries.&lt;/p>
+&lt;p>Since &lt;strong>FireDucks 1.1.1&lt;/strong>, we have supported such optimization to be taken care of by its internal JIT compiler.
+Even though such parameters are not manually specified, the JIT compiler can inspect the projection targets
+on various stages for a given data and it can automatically specify such parameters when generating the optimized code.
+Such optimization is commonly known as &lt;strong>pushdown-projection&lt;/strong>. By specifiying the environment variable &lt;strong>FIRE_LOG_LEVEL=3&lt;/strong>,
+you can inspect the before and after optimization for the below example.&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ cat read_parquet_opt_demo.py
+import pandas as pd
+df = pd.read_parquet(&amp;#34;sample_data.parquet&amp;#34;)
+r1 = df[df[&amp;#34;x&amp;#34;] == 1][&amp;#34;c&amp;#34;].sum()
+print(r1)
+&lt;/code>&lt;/pre>&lt;p>Execute the program as follows:&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ FIRE_LOG_LEVEL=3 python -mfireducks.pandas read_parquet_opt_demo.py
+&lt;/code>&lt;/pre>&lt;p>It will then show the intermediate representation generated for the above program before execution as follows:&lt;/p>
+&lt;pre tabindex="0">&lt;code>2024-12-04 13:12:40.618398: 543780 fireducks/lib/fireducks_core.cc:64] Input IR:
+func @main() {
+%t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, []) &amp;lt;- load the input parquet file
+%t1 = project(%t0, &amp;#39;x&amp;#39;) &amp;lt;- project &amp;#34;x&amp;#34; column from loaded data (df[&amp;#34;x&amp;#34;])
+%t2 = eq.vector.scalar(%t1, 1) &amp;lt;- generate mask with equality check with scalar value, 1 (mask = df[&amp;#34;x&amp;#34;] == 1)
+%t3 = filter(%t0, %t2) &amp;lt;- perform filter with computed mask (fdf = df[mask])
+%t4 = project(%t3, &amp;#39;c&amp;#39;) &amp;lt;- project &amp;#34;c&amp;#34; column from filtered data (fdf[&amp;#34;c&amp;#34;])
+%v5 = aggregate_column.scalar(%t4, &amp;#39;sum&amp;#39;) &amp;lt;- calculate sum of projected column (fdf[&amp;#34;c&amp;#34;].sum())
+return(%t4, %v5)
+}
+&lt;/code>&lt;/pre>&lt;p>And the Optimized IR (target for execution) is as follows.
+You can see that it is mostly the same with the optimization added in the instruction for read_parquet()
+by automatically specifying the target columns to be loaded for the specific result (r1).&lt;/p>
+&lt;pre tabindex="0">&lt;code>2024-12-04 13:12:40.619360: 543780 fireducks/lib/fireducks_core.cc:73] Optimized IR:
+func @main() {
+%t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, [&amp;#39;c&amp;#39;, &amp;#39;x&amp;#39;])
+%t1 = project(%t0, &amp;#39;x&amp;#39;)
+%t2 = eq.vector.scalar(%t1, 1)
+%t3 = project(%t0, [&amp;#39;c&amp;#39;])
+%t4 = filter(%t3, %t2)
+%t5 = project(%t4, &amp;#39;c&amp;#39;)
+%v6 = aggregate_column.scalar(%t5, &amp;#39;sum&amp;#39;)
+return(%t5, %v6)
+}
+&lt;/code>&lt;/pre>&lt;h2 id="lets-put-it-into-a-test-drive">Let&amp;rsquo;s put it into a test drive&lt;/h2>
+&lt;p>You can refer to the &lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/read_parquet_optimization.ipynb">notebook&lt;/a>.
+It explains some Do&amp;rsquo;s and Don&amp;rsquo;ts when executing a query in notebook-like platform. In case of notebook, the execution takes place cell-by-cell.
+Thus when keeping the intermediate results in some cell variables, FireDucks compiler cannot detect whether they will be used at some later stage.
+So it will keep all of them alive hindering the optimization. Therefore, it is highly recommended to write a query in chained expression
+when using notebook.&lt;/p>
+&lt;p>It also demonstrates the performance benefit of such optimization on a real dataset.
+You may like to experiment around the query to realize the efficiency of FireDucks optimization.
+For a sample query, FireDucks performed 45x faster than Pandas, that too without any modification in the source program and affecting the result.&lt;/p>
+&lt;h2 id="wrapping-up">Wrapping-up&lt;/h2>
+&lt;p>Thank you for your time in reading this article.
+In case you have any queries or have an issue to report, please feel free to get in touch with us in any of your prefered channel mentioned below:&lt;/p>
+&lt;ul>
+&lt;li>🦆github : &lt;a href="https://github.com/fireducks-dev/fireducks/issues/new">https://github.com/fireducks-dev/fireducks/issues/new&lt;/a>&lt;/li>
+&lt;li>📧mail : &lt;a href="mailto:contact@fireducks.jp.nec.com">contact@fireducks.jp.nec.com&lt;/a>&lt;/li>
+&lt;li>🤝slack : &lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Posts: Unveiling the Optimization Benefit of FireDucks Lazy Execution: Part #2</title><link>https://fireducks-dev.github.io/posts/efficient_caching/</link><pubDate>Thu, 05 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/efficient_caching/</guid><description>
+&lt;p>In the previous &lt;a href="../lazy_execution_offering_part1">article&lt;/a>, we have talked about how FireDucks can take care pushdown-projection related
+optimization for read_parquet(), read_csv() etc. In today&amp;rsquo;s article, we will focus on the efficient caching mechanism
+by its JIT compiler.&lt;/p>
+&lt;p>Let&amp;rsquo;s consider the below sample query for the same data, used in previous article:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;sample_data.parquet&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f_df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>loc[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">3&lt;/span>, [&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;y&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>r1 &lt;span style="color:#f92672">=&lt;/span> f_df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(r1)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>When executing the above program (saved as sample.py) as follows:&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ FIRE_LOG_LEVEL=3 python -mfireducks.pandas sample.py
+&lt;/code>&lt;/pre>&lt;p>You can find the generated IR before and after optimization:&lt;/p>
+&lt;pre tabindex="0">&lt;code>2024-12-05 12:37:21.012481: 958259 fireducks/lib/fireducks_core.cc:64] Input IR:
+func @main() {
+%t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, [])
+%t1 = project(%t0, [&amp;#39;x&amp;#39;, &amp;#39;y&amp;#39;, &amp;#39;z&amp;#39;])
+%t2 = project(%t0, &amp;#39;a&amp;#39;)
+%t3 = gt.vector.scalar(%t2, 3)
+%t4 = filter(%t1, %t3)
+%t5 = groupby_select_agg(%t4, [&amp;#39;x&amp;#39;], [&amp;#39;sum&amp;#39;], [], [], &amp;#39;z&amp;#39;)
+%v6 = get_shape(%t5)
+return(%t5, %v6)
+}
+2024-12-05 12:37:21.013462: 958259 fireducks/lib/fireducks_core.cc:73] Optimized IR:
+func @main() {
+%t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, [&amp;#39;x&amp;#39;, &amp;#39;a&amp;#39;, &amp;#39;z&amp;#39;])
+%t1 = project(%t0, [&amp;#39;z&amp;#39;, &amp;#39;x&amp;#39;])
+%t2 = project(%t0, &amp;#39;a&amp;#39;)
+%t3 = gt.vector.scalar(%t2, 3)
+%t4 = filter(%t1, %t3)
+%t5 = groupby_select_agg(%t4, [&amp;#39;x&amp;#39;], [&amp;#39;sum&amp;#39;], [], [], &amp;#39;z&amp;#39;)
+%v6 = get_shape(%t5)
+return(%t5, %v6)
+}
+&lt;/code>&lt;/pre>&lt;p>It can be noted that the compiler correctly identified the projection targets for read_parquet() as &amp;ldquo;x&amp;rdquo;, &amp;ldquo;a&amp;rdquo;, and &amp;ldquo;z&amp;rdquo; columns.
+Although the &amp;ldquo;y&amp;rdquo; column is specified to be projected in the loc indexer, but that column is never used within the
+above program. Hence, that is not even loaded during the read_parquet stage.&lt;/p>
+&lt;h2 id="could-lazy-execution-be-expensive">Could lazy execution be expensive?&lt;/h2>
+&lt;p>Now, the question is what will happen if we want to perform another groupby-aggregation on the same filtered dataframe
+that requires &amp;ldquo;y&amp;rdquo; column as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;sample_data.parquet&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f_df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>loc[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">3&lt;/span>, [&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;y&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>r1 &lt;span style="color:#f92672">=&lt;/span> f_df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(r1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>r2 &lt;span style="color:#f92672">=&lt;/span> f_df&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;y&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum() &lt;span style="color:#75715e"># newly added groupby-sum&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(r2)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Since FireDucks performs lazy execution,&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>will it process two expensive calls as follows&lt;/strong>?&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>r1 &lt;span style="color:#f92672">=&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;sample_data.parquet&amp;#34;&lt;/span>, columns&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;[&amp;#34;&lt;/span>x&lt;span style="color:#e6db74">&amp;#34;, &amp;#34;&lt;/span>z&lt;span style="color:#e6db74">&amp;#34;, &amp;#34;&lt;/span>a&lt;span style="color:#e6db74">&amp;#34;])&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>loc[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">3&lt;/span>, [&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>r2 &lt;span style="color:#f92672">=&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;sample_data.parquet&amp;#34;&lt;/span>, columns&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;[&amp;#34;&lt;/span>y&lt;span style="color:#e6db74">&amp;#34;, &amp;#34;&lt;/span>z&lt;span style="color:#e6db74">&amp;#34;, &amp;#34;&lt;/span>a&lt;span style="color:#e6db74">&amp;#34;])&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>loc[df[&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#ae81ff">3&lt;/span>, [&lt;span style="color:#e6db74">&amp;#34;y&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;y&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;z&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;ol start="2">
+&lt;li>&lt;strong>Or, will it keep the intermediate filtered result (f_df) alive when processing &lt;code>r1&lt;/code>&lt;/strong>? since it will be used later in the given program when processing &lt;code>r2&lt;/code>.&lt;/li>
+&lt;/ol>
+&lt;p>👉 &lt;strong>The answer is (2)&lt;/strong>. It will effectively keep the intermediate results alive that are to be required at some later stage.&lt;/p>
+&lt;p>Let&amp;rsquo;s look into the generated IR of the before and after optimization for the modified program:&lt;/p>
+&lt;pre tabindex="0">&lt;code>2024-12-05 13:26:41.691496: 959435 fireducks/lib/fireducks_core.cc:64] Input IR:
+func @main() {
+%t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, [])
+%t1 = project(%t0, [&amp;#39;x&amp;#39;, &amp;#39;y&amp;#39;, &amp;#39;z&amp;#39;])
+%t2 = project(%t0, &amp;#39;a&amp;#39;)
+%t3 = gt.vector.scalar(%t2, 3)
+%t4 = filter(%t1, %t3)
+%t5 = groupby_select_agg(%t4, [&amp;#39;x&amp;#39;], [&amp;#39;sum&amp;#39;], [], [], &amp;#39;z&amp;#39;)
+%v6 = get_shape(%t5)
+return(%t5, %t4, %v6)
+}
+2024-12-05 13:26:41.692423: 959435 fireducks/lib/fireducks_core.cc:73] Optimized IR:
+func @main() {
+%t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, [&amp;#39;z&amp;#39;, &amp;#39;x&amp;#39;, &amp;#39;a&amp;#39;, &amp;#39;y&amp;#39;]) &amp;lt;- this time it also loads &amp;#34;y&amp;#34; column (as needed for r2)
+%t1 = project(%t0, [&amp;#39;x&amp;#39;, &amp;#39;y&amp;#39;, &amp;#39;z&amp;#39;])
+%t2 = project(%t0, &amp;#39;a&amp;#39;)
+%t3 = gt.vector.scalar(%t2, 3)
+%t4 = filter(%t1, %t3)
+%t5 = groupby_select_agg(%t4, [&amp;#39;x&amp;#39;], [&amp;#39;sum&amp;#39;], [], [], &amp;#39;z&amp;#39;)
+%v6 = get_shape(%t5)
+return(%t5, %t4, %v6) &amp;lt;- this time it also returns filtered dataframe (%t4)
+}
+2024-12-05 13:26:41.706225: 959435 fireducks/lib/fireducks_core.cc:64] Input IR:
+func @main(%arg0: !table) { later use.
+%t1 = groupby_select_agg(%arg0, [&amp;#39;y&amp;#39;], [&amp;#39;sum&amp;#39;], [], [], &amp;#39;z&amp;#39;)
+%v2 = get_shape(%t1)
+return(%t1, %v2)
+}
+2024-12-05 13:26:41.706721: 959435 fireducks/lib/fireducks_core.cc:73] Optimized IR:
+func @main(%arg0: !table) {
+%t1 = groupby_select_agg(%arg0, [&amp;#39;y&amp;#39;], [&amp;#39;sum&amp;#39;], [], [], &amp;#39;z&amp;#39;)
+%v2 = get_shape(%t1)
+return(%t1, %v2)
+}
+&lt;/code>&lt;/pre>&lt;p>The first &amp;ldquo;Optimized IR&amp;rdquo; is generated when processing &lt;code>r1&lt;/code>.
+This time the compiler identifies the &amp;ldquo;y&amp;rdquo; column and the filtered dataframe (f_df) will be used at later stage when computing &lt;code>r2&lt;/code>.
+Hence it will also load the &amp;ldquo;y&amp;rdquo; column and keep the intermediate filtered dataframe alive (in other word, cache it) by returning
+it (%t4) along with the result of &lt;code>r1&lt;/code> (%t5) to avoid further processing at later use.&lt;/p>
+&lt;p>👉If you carefully notice the previous IR returned only &lt;code>(%t5, %v6)&lt;/code>, when there was no computing related to &lt;code>r2&lt;/code> in the input program.&lt;/p>
+&lt;p>The second &amp;ldquo;Optimized IR&amp;rdquo; is generated when processing &lt;code>r2&lt;/code>.
+The input &lt;code>%arg0&lt;/code> is the filtered dataframe (%t4) that the compiler kept alive.
+Hence only groupby-sum is performed when processing &lt;code>r2&lt;/code>.&lt;/p>
+&lt;h2 id="how-to-profile">How to profile?&lt;/h2>
+&lt;p>You can also check kernel-wise execution time, number of calls etc. by executing the program as follows:&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ FIREDUCKS_FLAGS=&amp;#34;--trace=3 --trace-file=-&amp;#34; python -mfireducks.pandas sample.py
+&lt;/code>&lt;/pre>&lt;p>It will produce some profiling output as follows:&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-duration" data-lang="duration">== kernel ==
+fireducks.gt.vector.scalar 0.004 8.26% 1
+fireducks.read_parquet 0.003 6.02% 1
+fireducks.groupby_select_agg 0.002 3.06% 2
+fireducks.to_pandas.frame.metadata 0.001 1.89% 2
+fireducks.filter 0.001 1.34% 1
+fireducks.project 0.000 0.03% 2
+&lt;/code>&lt;/pre>&lt;p>It can clearly be seen that the method related to read_parquet, filter etc. is called only once.
+In order to produce the similar profiling on Jupyter notebook, you can use the cell magic: &lt;code>%%fireducks.profile&lt;/code>.&lt;/p>
+&lt;h2 id="wrapping-up">Wrapping-up&lt;/h2>
+&lt;p>Thank you for your time in reading this article.
+In case you have any queries or have an issue to report, please feel free to get in touch with us in any of your prefered channel mentioned below:&lt;/p>
+&lt;ul>
+&lt;li>🦆github : &lt;a href="https://github.com/fireducks-dev/fireducks/issues/new">https://github.com/fireducks-dev/fireducks/issues/new&lt;/a>&lt;/li>
+&lt;li>📧mail : &lt;a href="mailto:contact@fireducks.jp.nec.com">contact@fireducks.jp.nec.com&lt;/a>&lt;/li>
+&lt;li>🤝slack : &lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Posts: Import hooks: how to use FireDucks without modifying your programs</title><link>https://fireducks-dev.github.io/posts/importhook/</link><pubDate>Wed, 15 Nov 2023 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/importhook/</guid><description>
 &lt;p>This is Osamu Daido from the FireDucks development team.
 In today&amp;rsquo;s developers&amp;rsquo; blog, I would like to introduce the import hook feature of FireDucks.
 This feature enables you to use FireDucks without modifying your existing programs at all.&lt;/p>
