@@ -235,6 +235,40 @@ you may like to &lt;a href="https://github.com/fireducks-dev/fireducks/issues">r
 This will produce a file named, &lt;code>trace.json&lt;/code> containing several traces related to your program performance in the current working directory.
 If you like to share that json file with us (it doesn&amp;rsquo;t contain any confidential information related to your data),
 we will look into the areas for improvement and may suggest you corrective measures.&lt;/p></description></item><item><title>Docs: Benchmark Archive</title><link>https://fireducks-dev.github.io/docs/benchmarks/archive/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/docs/benchmarks/archive/</guid><description>
+&lt;h2 id="2024-09-09">2024-09-09&lt;/h2>
+&lt;p>Server specification:&lt;/p>
+&lt;ul>
+&lt;li>cpu: intel(r) xeon(r) gold 5317 cpu @ 3.00ghz x 2sockets (48hw threads total)&lt;/li>
+&lt;li>main memory: 256GB&lt;/li>
+&lt;/ul>
+&lt;p>&lt;a href="https://github.com/fireducks-dev/polars-tpch/tree/fireducks">source code of the benchmark&lt;/a>&lt;/p>
+&lt;p>The following graph compares four data frame libraries
+(&lt;a href="https://pandas.pydata.org/">pandas&lt;/a>,
+&lt;a href="https://github.com/modin-project/modin">modin&lt;/a>, &lt;a href="https://pola.rs/">polars&lt;/a>,
+and fireducks) on 22 different queries included in the benchmark. The vertical
+axis shows how many times faster compared to pandas on a logarithmic scale,
+where anything greater than 1 indicates that it is faster than pandas. &lt;strong>The
+Scale Factor, which represents the data size is 10 (dataset of about 10 GB),
+the time spent on each query was measured excluding I/O (RUN_IO_TYPE=skip),
+and the input data is generated using pyarrow (instead of polars) for a fair
+comparison.&lt;/strong> Please refer to the procedure mentioned in
+&lt;a href="https://github.com/fireducks-dev/polars-tpch/blob/fireducks/README.md">README&lt;/a>
+to reproduce the evaluation result.&lt;/p>
+&lt;p>The average speedup over pandas for 22 queries was 0.89x for Modin, 39x for
+Polars, and &lt;strong>50x for FireDucks&lt;/strong>.&lt;/p>
+&lt;p>&lt;img src="../20240909/polars-tpch-sf10_20240909.webp" alt="polars-tpch-sf10">&lt;/p>
+&lt;p>The versions of the libraries used were as follows (the latest versions at the time of the measurements).&lt;/p>
+&lt;ul>
+&lt;li>pandas: 2.2.2&lt;/li>
+&lt;li>Modin: 0.31.0&lt;/li>
+&lt;li>Polars: 1.6.0&lt;/li>
+&lt;li>FireDucks: 1.0.3&lt;/li>
+&lt;/ul>
+&lt;p>The following chart shows the comparison between Polars and FireDucks with
+larger dataset, Scale Factor 10, 20 and 50. The vertical axis shows how many
+times faster FireDucks is compared to Polars. On average, &lt;strong>FireDucks is 1.3
+times (sf=10), 1.3 times (sf=20), and 1.5 times (sf=50) faster than Polars&lt;/strong>.&lt;/p>
+&lt;p>&lt;img src="../20240909/polars-tpch_20240909.webp" alt="polars-tpch">&lt;/p>
 &lt;h2 id="2024-06-05">2024-06-05&lt;/h2>
 &lt;p>server specs&lt;/p>
 &lt;ul>

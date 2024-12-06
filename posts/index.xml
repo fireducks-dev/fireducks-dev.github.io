@@ -1,4 +1,63 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Thu, 05 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: What to do when FireDucks is slow</title><link>https://fireducks-dev.github.io/posts/beginner_guide/</link><pubDate>Mon, 11 Nov 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/beginner_guide/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Fri, 06 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: How to run polars-tpch benchmark with FireDucks</title><link>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</link><pubDate>Fri, 06 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</guid><description>
+&lt;p>Recently we have updated the result of &lt;a href="https://github.com/pola-rs/tpch">polars-tpch
+benchmark&lt;/a> on 4th generation Xeon processor.
+The latest result can be found &lt;a href="https://fireducks-dev.github.io/docs/benchmarks/#2-tpc-h-benchmark">here&lt;/a>, and
+also below in this page. This post describes how to reproduce it.&lt;/p>
+&lt;p>For reproducibility, we have used AWS ES2 for this time evaluation. We have
+used &lt;code>m7i.8xlarge&lt;/code> instance type with ubuntu 24.04 image and 128GB EBS SSD.
+This instance includes:&lt;/p>
+&lt;ul>
+&lt;li>4th generation Xeon processor: Intel(R) Xeon(R) Platinum 8488C (32cores)&lt;/li>
+&lt;li>128GB memory&lt;/li>
+&lt;/ul>
+&lt;h2 id="benchmark-result">Benchmark Result&lt;/h2>
+&lt;p>The graph shown below compares performance of four dataframe libraries,
+pandas, polars, modin and fireducks as a speedup from pandas. In average of 22
+queries:&lt;/p>
+&lt;ul>
+&lt;li>fireducks is 125x faster than pandas, and&lt;/li>
+&lt;li>polars is 57x&lt;/li>
+&lt;li>modin is 1.0x.&lt;/li>
+&lt;/ul>
+&lt;p>Note that our setting of benchmark is:&lt;/p>
+&lt;ul>
+&lt;li>Scale factor is 10(about 10GB dataset) &lt;code>SCALE_FACTOR=10.0&lt;/code>&lt;/li>
+&lt;li>Timings without IO &lt;code>RUN_IO_TYPE=skip&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="polars-tpch-sf10_20241205.webp" alt="polars-tpch benchmark result">&lt;/p>
+&lt;h2 id="how-to-run-the-benchmark-with-fireducks">How to run the benchmark with FireDucks&lt;/h2>
+&lt;p>After launching instance and logging into it, you need to install python:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ sudo apt update
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ sudo apt install python3.10-venv make gcc
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Then clone the benchmark code from &lt;a href="https://github.com/fireducks-dev/polars-tpch">our
+repository&lt;/a> which includes
+queries for FireDucks:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ git clone https://github.com/fireducks-dev/polars-tpch
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ cd polars-tpch
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Then run the script which first creates dataset with &lt;code>SCALE_FACTOR=10.0&lt;/code> and runs
+all 22 queries once with FireDucks and the above settings:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ ./run-fireducks.sh
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Now you can see timings for all queries in &lt;code>output/run/timings.csv&lt;/code>.&lt;/p>
+&lt;h2 id="how-to-produce-timings-for-the-graph">How to produce timings for the graph&lt;/h2>
+&lt;p>The graph shown above was created with minimum execution time among three runs
+for each query.&lt;/p>
+&lt;p>To do this:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ SCALE_FACTOR&lt;span style="color:#f92672">=&lt;/span>10.0 make tables &lt;span style="color:#75715e"># create dataset by polars&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ .venv/bin/pip install -U pandas polars modin &lt;span style="color:#75715e"># install latest libraries&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ ./run-fppm3.sh &lt;span style="color:#75715e"># run four libraries three times&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="how-queries-for-fireducks-are-implemented">How Queries for FireDucks Are Implemented&lt;/h2>
+&lt;p>When we have started to use TPC-H benchmark for evaluation of FireDucks, we
+have implemented pandas version of queries so that those produce the correct
+result. Then after we were aware of polars-tpch benchmark, we have updated our
+queries as like polars as possible, for example same number of operations, same
+order of operations, etc.&lt;/p>
+&lt;p>Since both libraries has different API, implantations are not 100% same. But I
+am surprised that both implementation can looks very similar thanks to flexible
+pandas API. Here is query 2 as an example. Can you tell which is which?&lt;/p>
+&lt;p>&lt;img src="q02.webp" alt="q02">&lt;/p>
+&lt;p>In this posts we have described how to reproduce our results. Let&amp;rsquo;s try and
+take a look at both queries. If you find something to be improved for
+reasonable comparison among libraries, let us know.&lt;/p></description></item><item><title>Posts: What to do when FireDucks is slow</title><link>https://fireducks-dev.github.io/posts/beginner_guide/</link><pubDate>Mon, 11 Nov 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/beginner_guide/</guid><description>
 &lt;p>Thank you for your interest in FireDucks.
 &lt;!-- raw HTML omitted -->This article describes possible causes and remedies for slow programs using FireDucks.&lt;/p>
 &lt;p>When a pandas program with FireDucks applied is slow, the reason may be the followings.&lt;/p>
