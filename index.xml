@@ -38,7 +38,7 @@ r1 = df[df[&amp;#34;x&amp;#34;] == 1][&amp;#34;c&amp;#34;].sum()
 print(r1)
 &lt;/code>&lt;/pre>&lt;p>Execute the program as follows:&lt;/p>
 &lt;pre tabindex="0">&lt;code>$ FIRE_LOG_LEVEL=3 python -mfireducks.pandas read_parquet_opt_demo.py
-&lt;/code>&lt;/pre>&lt;p>It will then show the intermediate representation generated for the above program before execution as follows:&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>It will then show the intermediate representation (IR) generated for the above program before execution as follows:&lt;/p>
 &lt;pre tabindex="0">&lt;code>2024-12-04 13:12:40.618398: 543780 fireducks/lib/fireducks_core.cc:64] Input IR:
 func @main() {
 %t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, []) &amp;lt;- load the input parquet file
@@ -51,7 +51,7 @@ return(%t4, %v5)
 }
 &lt;/code>&lt;/pre>&lt;p>And the Optimized IR (target for execution) is as follows.
 You can see that it is mostly the same with the optimization added in the instruction for read_parquet()
-by automatically specifying the target columns to be loaded for the specific result (r1).&lt;/p>
+by automatically specifying the target columns to be loaded for the computation of this specific result (r1).&lt;/p>
 &lt;pre tabindex="0">&lt;code>2024-12-04 13:12:40.619360: 543780 fireducks/lib/fireducks_core.cc:73] Optimized IR:
 func @main() {
 %t0 = read_parquet(&amp;#39;sample_data.parquet&amp;#39;, [&amp;#39;c&amp;#39;, &amp;#39;x&amp;#39;])
@@ -63,15 +63,26 @@ func @main() {
 %v6 = aggregate_column.scalar(%t5, &amp;#39;sum&amp;#39;)
 return(%t5, %v6)
 }
-&lt;/code>&lt;/pre>&lt;h2 id="lets-put-it-into-a-test-drive">Let&amp;rsquo;s put it into a test drive&lt;/h2>
+&lt;/code>&lt;/pre>&lt;p>The python equivalent of the above optimized IR (that will be executed by the FireDucks multi-threaded kernel) is as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;sample_data.parquet&amp;#34;&lt;/span>, columns&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>]) &lt;span style="color:#75715e"># load only required column for analysis&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;x&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># projection of target column for equality check&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t2 &lt;span style="color:#f92672">=&lt;/span> (t1 &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t3 &lt;span style="color:#f92672">=&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># projection of only target column to be filtered&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t4 &lt;span style="color:#f92672">=&lt;/span> t3[t2]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t5 &lt;span style="color:#f92672">=&lt;/span> t4[&lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>v6 &lt;span style="color:#f92672">=&lt;/span> t5&lt;span style="color:#f92672">.&lt;/span>sum()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>⚠️ Please note that the verification through this environment variable setting is mainly for the developers and
+we might change the way of representing the IRs in future. As a user, it would be good to inspect the optimization
+using this variable at this moment though.&lt;/p>
+&lt;h2 id="lets-put-it-into-a-test-drive">Let&amp;rsquo;s put it into a test drive&lt;/h2>
 &lt;p>You can refer to the &lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/read_parquet_optimization.ipynb">notebook&lt;/a>.
-It explains some Do&amp;rsquo;s and Don&amp;rsquo;ts when executing a query in notebook-like platform. In case of notebook, the execution takes place cell-by-cell.
-Thus when keeping the intermediate results in some cell variables, FireDucks compiler cannot detect whether they will be used at some later stage.
+It demonstrates the performance benefit of such optimization on a real dataset.
+You may like to experiment around the query to realize the efficiency of FireDucks optimization.
+For a sample query, &lt;strong>FireDucks performed 45x faster than Pandas, that too without any modification in the source program and affecting the result&lt;/strong>.&lt;/p>
+&lt;p>It also explains some Do&amp;rsquo;s and Don&amp;rsquo;ts when executing a query in notebook-like platform. In case of notebook, the execution takes place cell-by-cell.
+Thus when keeping the intermediate results in some cell variables, FireDucks compiler assumes that those might be used at some later stage.
 So it will keep all of them alive hindering the optimization. Therefore, it is highly recommended to write a query in chained expression
 when using notebook.&lt;/p>
-&lt;p>It also demonstrates the performance benefit of such optimization on a real dataset.
-You may like to experiment around the query to realize the efficiency of FireDucks optimization.
-For a sample query, FireDucks performed 45x faster than Pandas, that too without any modification in the source program and affecting the result.&lt;/p>
 &lt;h2 id="wrapping-up">Wrapping-up&lt;/h2>
 &lt;p>Thank you for your time in reading this article.
 In case you have any queries or have an issue to report, please feel free to get in touch with us in any of your prefered channel mentioned below:&lt;/p>
