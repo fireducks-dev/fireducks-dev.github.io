@@ -1,9 +1,9 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Fri, 06 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: How to run polars-tpch benchmark with FireDucks</title><link>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</link><pubDate>Fri, 06 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</guid><description>
 &lt;p>Recently we have updated the result of &lt;a href="https://github.com/pola-rs/tpch">polars-tpch
 benchmark&lt;/a> on 4th generation Xeon processor.
-The latest result can be found &lt;a href="https://fireducks-dev.github.io/docs/benchmarks/#2-tpc-h-benchmark">here&lt;/a>,　and
+The latest result can be found &lt;a href="https://fireducks-dev.github.io/docs/benchmarks/#2-tpc-h-benchmark">here&lt;/a>, and
 also below in this artice, explaining how to reproduce the same.&lt;/p>
-&lt;p>For reproducibility, we have used AWS ES2 for this time evaluation. We have
+&lt;p>For reproducibility, we have used AWS EC2 for this time evaluation. We have
 used &lt;code>m7i.8xlarge&lt;/code> instance type with ubuntu 24.04 image and 128GB EBS SSD.
 This instance includes:&lt;/p>
 &lt;ul>
