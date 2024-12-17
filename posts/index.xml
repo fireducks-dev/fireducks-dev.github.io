@@ -1,4 +1,77 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Fri, 06 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: How to run polars-tpch benchmark with FireDucks</title><link>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</link><pubDate>Fri, 06 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Tue, 17 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Cache or Eliminate? How FireDucks increase opportunity of optimization</title><link>https://fireducks-dev.github.io/posts/20241217_liveness_analysis/</link><pubDate>Tue, 17 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/20241217_liveness_analysis/</guid><description>
+&lt;p>As described &lt;a href="https://fireducks-dev.github.io/docs/user-guide/02-exec-model/">here&lt;/a>, FireDucks uses
+lazy execution model with define-by-run IR generation. Since FireDucks uses
+&lt;a href="https://mlir.llvm.org">MLIR compiler framework&lt;/a> to optimize and execute IR,
+first step of the execution is creating MLIR function which holds operations
+to be evaluated. This article describes how important this function creation
+step is for optimization, thus performance.&lt;/p>
+&lt;p>In the simple example below, execution of IR is kicked by the &lt;code>print&lt;/code> statement
+which calls &lt;code>df2.__repr__()&lt;/code>.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df0 &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;date.parquet&amp;#34;&lt;/span>, [])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df1 &lt;span style="color:#f92672">=&lt;/span> df0&lt;span style="color:#f92672">.&lt;/span>sort_value(&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df2 &lt;span style="color:#f92672">=&lt;/span> df1[[&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(df2)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> :
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>When the execution is started, FireDucks collects
+operations which are required to compute &lt;code>df2&lt;/code> and put those into a MLIR
+function.
+Simplest MLIR function would be as below.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-mlir" data-lang="mlir">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// MLIR function (simplified)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">func&lt;/span> main() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> %t0 = read_parquet(&lt;span style="color:#e6db74">&amp;#34;data.parquet&amp;#34;&lt;/span>, [])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> %t1 = sort_values(%t0, [&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>], [True])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> %t2 = project(%t1, [&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> %t0, %t1, %t2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>In this function, the &lt;code>return&lt;/code> op at the end of the function returns three
+values, &lt;code>%t0&lt;/code>, &lt;code>%t1&lt;/code> and &lt;code>%t2&lt;/code>. Returned values will be bound to the variables
+in python, i.e. &lt;code>df0&lt;/code>, &lt;code>df1&lt;/code> and &lt;code>df2&lt;/code>, after the execution. If such variables
+will be used after &lt;code>print&lt;/code> statement, those results will be used. One can say
+that the result of the operations are &lt;strong>cached&lt;/strong> to avoid re-execution.&lt;/p>
+&lt;p>This function is however very strict for IR optimization. Because all output
+values of ops, &lt;code>%t0&lt;/code>, &lt;code>%t1&lt;/code> and &lt;code>%t2&lt;/code>, are returned, an optimizer has to
+preserve these values. On the other hand, for example, if &lt;code>return&lt;/code> op returns
+only &lt;code>%t2&lt;/code>, an optimizer can change IR as below. In this IR, only three column
+&lt;code>&amp;quot;a&amp;quot;, &amp;quot;b&amp;quot;, &amp;quot;c&amp;quot;&lt;/code> will be read from a file
+by &lt;code>read_parquet&lt;/code> op to minimize reading time and memory footprint because the
+result of it, &lt;code>%t0&lt;/code>, is only used to compute &lt;code>%t2&lt;/code>. As this simple example shows,
+because returning values from a function restricts optimization opportunity,
+returned values have to be carefully chosen.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-mlir" data-lang="mlir">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// MLIR function (simplified)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">func&lt;/span> main() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> %t0 = read_parquet(&lt;span style="color:#e6db74">&amp;#34;data.parquet&amp;#34;&lt;/span>, [&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>]) &lt;span style="color:#75715e">// only three columns are read from a parquet file.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> %t1 = sort_values(%t0, [&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>], [True])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> %t2 = project(%t1, [&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> %t2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="liveness-analysis">Liveness analysis&lt;/h2>
+&lt;p>To this end, FireDucks uses liveness analysis of python variables when creating
+a function. For example, if &lt;code>print&lt;/code> statement is the last line of a python
+script, the liveness analysis can say that &lt;code>df0&lt;/code> and &lt;code>df1&lt;/code> are dead at the
+&lt;code>print&lt;/code> statement because no user of those variables is in the script after the
+statement. With this analysis, FireDucks can &lt;strong>eliminate&lt;/strong> &lt;code>%t0&lt;/code> and &lt;code>%t1&lt;/code> from
+the &lt;code>return&lt;/code> op. As an another example, &lt;code>df1&lt;/code> is used after &lt;code>print&lt;/code> statement,
+the liveness analysis says that it is live, and &lt;code>%t1&lt;/code> is not eliminated from
+&lt;code>return&lt;/code> op.&lt;/p>
+&lt;p>In lazy execution system, re-execution sometimes drastically decreases
+performance. By using liveness analysis, FireDucks detects whether variables
+are used after execution or not in order to increase optimization opportunity with
+avoiding re-execution. AFAIK, this is the reason why FireDucks is very faster
+than polars in &lt;a href="https://www.linkedin.com/feed/update/urn:li:activity:7274024597606305792/">this
+article&lt;/a>.
+You can reproduce it &lt;a href="https://colab.research.google.com/drive/1cN82zfB56UZcG1Ooc2O1SbTe0rpr3DQl?usp=sharing&amp;amp;ref=dailydoseofds.com">on
+colab&lt;/a>.&lt;/p>
+&lt;h2 id="how-does-it-work-in-a-notebook">How does it work in a notebook?&lt;/h2>
+&lt;p>You may wonder how liveness analysis works when you are writing in a notebook
+or ipython. In such environment, because all python variables might be used in
+future cells, liveness analysis has to say that all variables are live. This
+results in limited optimization opportunity.&lt;/p>
+&lt;p>One workaround is that using chained style:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;date.parquet&amp;#34;&lt;/span>, [])&lt;span style="color:#f92672">.&lt;/span>sort_values(&lt;span style="color:#e6db74">&amp;#34;a&amp;#34;&lt;/span>)[[&lt;span style="color:#e6db74">&amp;#34;b&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>In this style, because results of intermediate operations, &lt;code>read_parquet&lt;/code> and
+&lt;code>sort_values&lt;/code> are not bound to any python variables, there is no chance to be
+used in future cells. In this case, FireDucks&amp;rsquo;s liveness analysis can say that
+those are dead when evaluating the result of last operation.&lt;/p></description></item><item><title>Posts: How to run polars-tpch benchmark with FireDucks</title><link>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</link><pubDate>Fri, 06 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/</guid><description>
 &lt;p>Recently we have updated the result of &lt;a href="https://github.com/pola-rs/tpch">polars-tpch
 benchmark&lt;/a> on 4th generation Xeon processor.
 The latest result can be found &lt;a href="https://fireducks-dev.github.io/docs/benchmarks/#2-tpc-h-benchmark">here&lt;/a>, and
