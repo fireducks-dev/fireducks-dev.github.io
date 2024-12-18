@@ -50,16 +50,16 @@ a function. For example, if &lt;code>print&lt;/code> statement is the last line 
 script, the liveness analysis can say that &lt;code>df0&lt;/code> and &lt;code>df1&lt;/code> are dead at the
 &lt;code>print&lt;/code> statement because no user of those variables is in the script after the
 statement. With this analysis, FireDucks can &lt;strong>eliminate&lt;/strong> &lt;code>%t0&lt;/code> and &lt;code>%t1&lt;/code> from
-the &lt;code>return&lt;/code> op. As an another example, &lt;code>df1&lt;/code> is used after &lt;code>print&lt;/code> statement,
-the liveness analysis says that it is live, and &lt;code>%t1&lt;/code> is not eliminated from
-&lt;code>return&lt;/code> op.&lt;/p>
+the &lt;code>return&lt;/code> op. As an another example, if &lt;code>df1&lt;/code> is used after &lt;code>print&lt;/code>
+statement, the liveness analysis says that it is live, and &lt;code>%t1&lt;/code> is not
+eliminated from &lt;code>return&lt;/code> op.&lt;/p>
 &lt;p>In lazy execution system, re-execution sometimes drastically decreases
 performance. By using liveness analysis, FireDucks detects whether variables
 are used after execution or not in order to increase optimization opportunity with
 avoiding re-execution. AFAIK, this is the reason why FireDucks is very faster
 than polars in &lt;a href="https://www.linkedin.com/feed/update/urn:li:activity:7274024597606305792/">this
 article&lt;/a>.
-You can reproduce it &lt;a href="https://colab.research.google.com/drive/1cN82zfB56UZcG1Ooc2O1SbTe0rpr3DQl?usp=sharing&amp;amp;ref=dailydoseofds.com">on
+You can &lt;a href="https://colab.research.google.com/drive/1cN82zfB56UZcG1Ooc2O1SbTe0rpr3DQl?usp=sharing&amp;amp;ref=dailydoseofds.com">reproduce it on
 colab&lt;/a>.&lt;/p>
 &lt;h2 id="how-does-it-work-in-a-notebook">How does it work in a notebook?&lt;/h2>
 &lt;p>You may wonder how liveness analysis works when you are writing in a notebook
