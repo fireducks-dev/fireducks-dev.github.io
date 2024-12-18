@@ -1,4 +1,210 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Tue, 17 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Unveiling the Optimization Benefit of FireDucks Lazy Execution: Part #1</title><link>https://fireducks-dev.github.io/posts/lazy_execution_offering_part1/</link><pubDate>Thu, 05 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/lazy_execution_offering_part1/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Wed, 18 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Exploring performance benefits of FireDucks over cuDF</title><link>https://fireducks-dev.github.io/posts/cudf_vs_fireducks/</link><pubDate>Wed, 18 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/cudf_vs_fireducks/</guid><description>
+&lt;p>&lt;a href="https://www.anaconda.com/resources/whitepapers/state-of-data-science-2020">Research&lt;/a> says that Data
+scientists spend about 45% of their time on data preparation tasks, including loading (19%) and
+cleaning (26%) the data. &lt;a href="https://pandas.pydata.org/">Pandas&lt;/a> is one of the most popular python
+libraries for tabular data processing because of its diverse utilities and large community support.
+However, due to its performance issue with the large-scale data processing, there is a strong need
+for high-performance data frame libraries for the community. Although there are many alternatives
+available at this moment, due to compatibility issue with pandas some of those either compel
+a user to learn completely new APIs (incurring migration cost) or to switch to a more
+efficient computational systems, like GPU etc. (incurring hardware cost).&lt;/p>
+&lt;p>In this article we will discuss two high-performance pandas alternatives that can help a pandas programmer
+to smoothly migrate an existing application while offering promising speed. They are:&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://docs.rapids.ai/api/cudf/stable">cuDF&lt;/a>: GPU accelerated DataFrame library with highly compatible pandas APIs&lt;/li>
+&lt;li>&lt;a href="https://fireducks-dev.github.io/">FireDucks&lt;/a>: A compiler accelerated DataFrame library with highly compatible pandas APIs for speedup even on CPU only systems&lt;/li>
+&lt;/ul>
+&lt;h2 id="fireducks-vs-cudf">FireDucks vs cuDF&lt;/h2>
+&lt;p>Both FireDucks and cuDF offer the following:&lt;/p>
+&lt;ul>
+&lt;li>ensure zero code changes with promising speedup&lt;/li>
+&lt;li>highly-compatible pandas APIs for a seamless integration with an existing pandas application&lt;/li>
+&lt;li>import-hook feature for a seamless integration with third party library using pandas&lt;/li>
+&lt;li>parallel implementation of the kernel algorithms (like join, groupby etc.) to leverage all the available cores&lt;/li>
+&lt;/ul>
+&lt;p>However, the key differences are:&lt;/p>
+&lt;ul>
+&lt;li>FireDucks can speedup an existing pandas application even on CPU only systems, whereas
+one needs to prepare a GPU environment before trying cuDF.&lt;/li>
+&lt;li>FireDucks supports a lazy execution model aiming for JIT query optimization, whereas
+cuDF supports only an eager execution model (similar to pandas). Therefore, if the program
+is not written carefully with the right data-flow, cuDF might suffer performance issue while
+FireDucks can outperform cuDF even on CPU only systems due to its efficient query optimization.&lt;/li>
+&lt;/ul>
+&lt;h2 id="evaluation">Evaluation&lt;/h2>
+&lt;h3 id="multi-threaded-benefit">Multi-threaded Benefit&lt;/h3>
+&lt;p>Here is an &lt;a href="https://developer.nvidia.com/blog/rapids-cudf-accelerates-pandas-nearly-150x-with-zero-code-changes">article&lt;/a>
+explaining the key features of cuDF along with its performance. We have used the notebook provided in that article
+to evaluate &lt;code>pandas&lt;/code>, &lt;code>fireducks.pandas &lt;/code>and &lt;code>cudf.pandas&lt;/code> respectively.&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/nyc_demo/pandas_nyc_demo.ipynb">test drive for native pandas&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/nyc_demo/fireducks_pandas_nyc_demo.ipynb">test drive for fireducks.pandas&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/nyc_demo/cudf_pandas_nyc_demo.ipynb">test drive for cudf.pandas&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;p>Here are some details related to the evaluation environment:&lt;/p>
+&lt;ul>
+&lt;li>CPU model: Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz&lt;/li>
+&lt;li>CPU cores: 48&lt;/li>
+&lt;li>main memory: 256gb&lt;/li>
+&lt;li>GPU model: NVIDIA Tesla V100&lt;/li>
+&lt;/ul>
+&lt;p>It can be noted that, by simply enabling the extension &lt;code>%load_ext fireducks.pandas&lt;/code>
+or &lt;code>%load_ext cudf.pandas&lt;/code>, one can successfully speedup the operations in an
+existing pandas notebook using FireDucks or cuDF. For this experiment, we have
+disabled FireDucks lazy-execution mode as follows for a fair comparison among these 3 libraries:&lt;/p>
+&lt;pre tabindex="0">&lt;code>from fireducks.core import get_fireducks_options
+get_fireducks_options().set_benchmark_mode(True)
+&lt;/code>&lt;/pre>&lt;p>The table below summarizes the query wise execution time for these libraries:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:left">&lt;/th>
+&lt;th style="text-align:right">pandas (sec)&lt;/th>
+&lt;th style="text-align:right">FireDucks (sec)&lt;/th>
+&lt;th style="text-align:right">cuDF (sec)&lt;/th>
+&lt;th style="text-align:left">speedup_from_FireDucks_over_pandas&lt;/th>
+&lt;th style="text-align:left">speedup_from_cuDF_over_pandas&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:left">data_loading&lt;/td>
+&lt;td style="text-align:right">1.85&lt;/td>
+&lt;td style="text-align:right">0.53&lt;/td>
+&lt;td style="text-align:right">0.42&lt;/td>
+&lt;td style="text-align:left">3.49x&lt;/td>
+&lt;td style="text-align:left">4.4x&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">query_1&lt;/td>
+&lt;td style="text-align:right">2.4&lt;/td>
+&lt;td style="text-align:right">0.08&lt;/td>
+&lt;td style="text-align:right">0.35&lt;/td>
+&lt;td style="text-align:left">30.0x&lt;/td>
+&lt;td style="text-align:left">6.86x&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">query_2&lt;/td>
+&lt;td style="text-align:right">0.75&lt;/td>
+&lt;td style="text-align:right">0.03&lt;/td>
+&lt;td style="text-align:right">0.01&lt;/td>
+&lt;td style="text-align:left">25.0x&lt;/td>
+&lt;td style="text-align:left">75.0x&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">query_3&lt;/td>
+&lt;td style="text-align:right">6.38&lt;/td>
+&lt;td style="text-align:right">0.15&lt;/td>
+&lt;td style="text-align:right">0.08&lt;/td>
+&lt;td style="text-align:left">42.53x&lt;/td>
+&lt;td style="text-align:left">79.75x&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>Due to difference in the underlined hardware, cuDF operations (that worked on GPU) definitely performed much better
+when compared to pandas, but the performance gain from FireDucks over pandas even on CPU is quite promising.
+In fact, the &lt;strong>overall speedup is ~13x (11.37s -&amp;gt; 0.87s) when using cuDF,
+whereas it is ~14x (11.37s -&amp;gt; 0.79s) when using FireDucks&lt;/strong> for the same pandas program.&lt;/p>
+&lt;h3 id="jit-optimization-benefit">JIT Optimization Benefit&lt;/h3>
+&lt;p>The above case shows how efficiently FireDucks can leverage the available cpu cores to speedup an existing pandas program.&lt;/p>
+&lt;p>Let&amp;rsquo;s now understand how FireDucks JIT query optimization can make it even better!!&lt;/p>
+&lt;p>We have used a &lt;a href="https://www.tpc.org/TPC_Documents_Current_Versions/pdf/TPC-H_v3.0.1.pdf#page=33">sample query&lt;/a>
+from the &lt;a href="https://www.tpc.org/tpch/">TPC-H benchmark&lt;/a> that deals with a couple of tables of different dimensions
+for a scale-factor 10.&lt;/p>
+&lt;p>👉 &lt;strong>Purpose: To retrieve the 10 unshipped orders with the highest value.&lt;/strong>&lt;/p>
+&lt;p>Here is the pandas implementation for this query:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;customer.parquet&amp;#34;&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>merge(pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;orders.parquet&amp;#34;&lt;/span>)),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;c_custkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_custkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>merge(pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;lineitem.parquet&amp;#34;&lt;/span>)),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_orderkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>pipe(&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[df[&lt;span style="color:#e6db74">&amp;#34;c_mktsegment&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;BUILDING&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>pipe(&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[df[&lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;&lt;/span> datetime(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>pipe(&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[df[&lt;span style="color:#e6db74">&amp;#34;l_shipdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> datetime(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>assign(revenue&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[&lt;span style="color:#e6db74">&amp;#34;l_extendedprice&amp;#34;&lt;/span>] &lt;span style="color:#f92672">*&lt;/span> (&lt;span style="color:#ae81ff">1&lt;/span> &lt;span style="color:#f92672">-&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;l_discount&amp;#34;&lt;/span>]))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby([&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>], as_index&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>agg({&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;sum&amp;#34;&lt;/span>})[[&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>sort_values([&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>], ascending&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#66d9ef">False&lt;/span>, &lt;span style="color:#66d9ef">True&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>reset_index(drop&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">10&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>to_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;q3_result.parquet&amp;#34;&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This time we have used the default lazy-execution mode in FireDucks to demonstrate its true strength.
+The execution time of this query for each DataFrame library is as follows:&lt;/p>
+&lt;ul>
+&lt;li>native pandas: 215.47 sec&lt;/li>
+&lt;li>fireducks.pandas: 1.69 sec&lt;/li>
+&lt;li>cudf.pandas: 26.79 sec&lt;/li>
+&lt;/ul>
+&lt;p>👉 &lt;strong>FireDucks outperformed pandas upto 127x (215.47s -&amp;gt; 1.69s) and cuDF upto 15x (215.47s -&amp;gt; 26.79s) for the avove query.&lt;/strong>&lt;/p>
+&lt;p>This speedup from FireDucks is due to the efficient query planning and optimization that
+is performed by the internal JIT compiler. Instead of executing the input query as it is,
+it attempts to optimize the same by reducing the scope of the input data for the time
+consuming join, groupby etc. operations majorly using the following steps:&lt;/p>
+&lt;ul>
+&lt;li>loading only required columns from the input parquet files to reduce the data horizontally&lt;/li>
+&lt;li>performing early filtration to reduce the data vertically&lt;/li>
+&lt;/ul>
+&lt;p>The optimized implementation for the same query could be as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>req_customer_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;c_custkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c_mktsegment&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># selecting (2/8) columns&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>req_lineitem_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_shipdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_extendedprice&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_discount&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># selecting (4/16) columns&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>req_orders_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;o_custkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># selecting (4/9) columns&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>customer &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;customer.parquet&amp;#34;&lt;/span>), columns &lt;span style="color:#f92672">=&lt;/span> req_customer_cols)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lineitem &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;lineitem.parquet&amp;#34;&lt;/span>), columns &lt;span style="color:#f92672">=&lt;/span> req_lineitem_cols)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>orders &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;orders.parquet&amp;#34;&lt;/span>), columns &lt;span style="color:#f92672">=&lt;/span> req_orders_cols)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># advanced-filter: to reduce scope of “customer” table to be processed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f_cust &lt;span style="color:#f92672">=&lt;/span> customer[customer[&lt;span style="color:#e6db74">&amp;#34;c_mktsegment&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;BUILDING&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># advanced-filter: to reduce scope of “orders” table to be processed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f_ord &lt;span style="color:#f92672">=&lt;/span> orders[orders[&lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;&lt;/span> datetime(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># advanced-filter: to reduce scope of “lineitem” table to be processed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f_litem &lt;span style="color:#f92672">=&lt;/span> lineitem[lineitem[&lt;span style="color:#e6db74">&amp;#34;l_shipdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> datetime(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> f_cust&lt;span style="color:#f92672">.&lt;/span>merge(f_ord, left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;c_custkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_custkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>merge(f_litem, left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_orderkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>assign(revenue&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[&lt;span style="color:#e6db74">&amp;#34;l_extendedprice&amp;#34;&lt;/span>] &lt;span style="color:#f92672">*&lt;/span> (&lt;span style="color:#ae81ff">1&lt;/span> &lt;span style="color:#f92672">-&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;l_discount&amp;#34;&lt;/span>]))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby([&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>], as_index&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>agg({&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;sum&amp;#34;&lt;/span>})[[&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>sort_values([&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>], ascending&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#66d9ef">False&lt;/span>, &lt;span style="color:#66d9ef">True&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>reset_index(drop&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">10&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>to_parquet(os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>join(datapath, &lt;span style="color:#e6db74">&amp;#34;opt_q3_result.parquet&amp;#34;&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The execution time of this optimized implementation for each DataFrame library is as follows:&lt;/p>
+&lt;ul>
+&lt;li>native pandas: 11.13 sec&lt;/li>
+&lt;li>fireducks.pandas: 1.72 sec&lt;/li>
+&lt;li>cudf.pandas: 0.76 sec&lt;/li>
+&lt;/ul>
+&lt;p>It can be noted that:&lt;/p>
+&lt;ul>
+&lt;li>the native pandas could itself be optimized upto &lt;strong>~19x (215.47 sec -&amp;gt; 11.13 sec)&lt;/strong>&lt;/li>
+&lt;li>there is no visible change in the execution time of FireDucks (&lt;strong>since the compiler does the same optimization automatically in the earlier case&lt;/strong>)&lt;/li>
+&lt;li>the cudf.pandas could be optimized upto &lt;strong>~35x (26.79 sec -&amp;gt; 0.76 sec)&lt;/strong>&lt;/li>
+&lt;/ul>
+&lt;p>Most importantly there is no impact in the final result due to the optimization performed.
+You can reproduce the same using this &lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/tpch-query3-pandas-fireducks-cudf.ipynb">notebook&lt;/a> at your end.&lt;/p>
+&lt;h2 id="wrapping-up">Wrapping up&lt;/h2>
+&lt;p>Thank you for your time in reading this article. We have discussed performance benefit of FireDucks
+over cuDF. While cuDF shows significant speedup without modifying an existing pandas program,
+its performance relies on the underlined GPU specification and how well the program is written, whereas
+FireDucks can optimize an existing pandas program efficiently like an expert programmer and
+execute the same without any extra overhead, that too on CPU only systems.&lt;/p>
+&lt;p>Being said that, &lt;strong>a GPU version of FireDucks is under dvelopment&lt;/strong>. It internally uses &lt;code>cuDF.pandas&lt;/code>
+for the kernel operations (like groupby, join etc.) while adding the JIT optimization for further
+acceleration as explained in this article. We will be talking about the GPU version of FireDucks
+in details in some other article.&lt;/p>
+&lt;p>We look forward your constant feedback to make FireDucks even better.
+Please feel free to get in touch with us in any of your prefered channel mentioned below:&lt;/p>
+&lt;ul>
+&lt;li>🦆github : &lt;a href="https://github.com/fireducks-dev/fireducks/issues/new">https://github.com/fireducks-dev/fireducks/issues/new&lt;/a>&lt;/li>
+&lt;li>📧mail : &lt;a href="mailto:contact@fireducks.jp.nec.com">contact@fireducks.jp.nec.com&lt;/a>&lt;/li>
+&lt;li>🤝slack : &lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Posts: Unveiling the Optimization Benefit of FireDucks Lazy Execution: Part #1</title><link>https://fireducks-dev.github.io/posts/lazy_execution_offering_part1/</link><pubDate>Thu, 05 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/lazy_execution_offering_part1/</guid><description>
 &lt;p>The availability of runtime memory is often a challenge faced at processing larger-than-memory-dataset while working with pandas.
 To solve the problem, one can either shift to a system with larger memory capacity or consider switching to alternative libraries supporting distributed data processing like (Dask, PySpark etc.).&lt;/p>
 &lt;p>Well, do you know when working with data stored in columnar formats like csv, parquet etc. and only some part of data is to be processed, manual optimization is possible even in pandas?
