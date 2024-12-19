@@ -5,7 +5,7 @@ cleaning (26%) the data. &lt;a href="https://pandas.pydata.org/">Pandas&lt;/a> i
 libraries for tabular data processing because of its diverse utilities and large community support.
 However, due to its performance issue with the large-scale data processing, there is a strong need
 for high-performance data frame libraries for the community. Although there are many alternatives
-available at this moment, due to compatibility issue with pandas some of those either compel
+available at this moment, due to compatibility issues with pandas some of those either compel
 a user to learn completely new APIs (incurring migration cost) or to switch to a more
 efficient computational systems, like GPU etc. (incurring hardware cost).&lt;/p>
 &lt;p>In this article we will discuss two high-performance pandas alternatives that can help a pandas programmer
@@ -14,7 +14,7 @@ to smoothly migrate an existing application while offering promising speed. They
 &lt;li>&lt;a href="https://docs.rapids.ai/api/cudf/stable">cuDF&lt;/a>: GPU accelerated DataFrame library with highly compatible pandas APIs&lt;/li>
 &lt;li>&lt;a href="https://fireducks-dev.github.io/">FireDucks&lt;/a>: A compiler accelerated DataFrame library with highly compatible pandas APIs for speedup even on CPU only systems&lt;/li>
 &lt;/ul>
-&lt;h2 id="fireducks-vs-cudf">FireDucks vs cuDF&lt;/h2>
+&lt;h2 id="fireducks-vs-cudf">FireDucks vs. cuDF&lt;/h2>
 &lt;p>Both FireDucks and cuDF offer the following:&lt;/p>
 &lt;ul>
 &lt;li>ensure zero code changes with promising speedup&lt;/li>
@@ -35,7 +35,7 @@ FireDucks can outperform cuDF even on CPU only systems due to its efficient quer
 &lt;h3 id="multi-threaded-benefit">Multi-threaded Benefit&lt;/h3>
 &lt;p>Here is an &lt;a href="https://developer.nvidia.com/blog/rapids-cudf-accelerates-pandas-nearly-150x-with-zero-code-changes">article&lt;/a>
 explaining the key features of cuDF along with its performance. We have used the notebook provided in that article
-to evaluate &lt;code>pandas&lt;/code>, &lt;code>fireducks.pandas &lt;/code>and &lt;code>cudf.pandas&lt;/code> respectively.&lt;/p>
+to evaluate &lt;code>pandas&lt;/code>, &lt;code>fireducks.pandas&lt;/code>, and &lt;code>cudf.pandas&lt;/code> respectively.&lt;/p>
 &lt;ul>
 &lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/nyc_demo/pandas_nyc_demo.ipynb">test drive for native pandas&lt;/a>&lt;/li>
 &lt;li>&lt;a href="https://github.com/fireducks-dev/fireducks/blob/main/notebooks/nyc_demo/fireducks_pandas_nyc_demo.ipynb">test drive for fireducks.pandas&lt;/a>&lt;/li>
@@ -45,7 +45,7 @@ to evaluate &lt;code>pandas&lt;/code>, &lt;code>fireducks.pandas &lt;/code>and &
 &lt;ul>
 &lt;li>CPU model: Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz&lt;/li>
 &lt;li>CPU cores: 48&lt;/li>
-&lt;li>main memory: 256gb&lt;/li>
+&lt;li>Main memory: 256gb&lt;/li>
 &lt;li>GPU model: NVIDIA Tesla V100&lt;/li>
 &lt;/ul>
 &lt;p>It can be noted that, by simply enabling the extension &lt;code>%load_ext fireducks.pandas&lt;/code>
@@ -137,7 +137,9 @@ The execution time of this query for each DataFrame library is as follows:&lt;/p
 &lt;li>fireducks.pandas: 1.69 sec&lt;/li>
 &lt;li>cudf.pandas: 26.79 sec&lt;/li>
 &lt;/ul>
-&lt;p>👉 &lt;strong>FireDucks outperformed pandas upto 127x (215.47s -&amp;gt; 1.69s) and cuDF upto 15x (215.47s -&amp;gt; 26.79s) for the avove query.&lt;/strong>&lt;/p>
+&lt;p>🚀🚀 &lt;strong>FireDucks outperformed pandas upto 127x (215.47s -&amp;gt; 1.69s) and cuDF upto 15x (26.79s -&amp;gt; 1.69s) for the avove query.&lt;/strong>&lt;/p>
+&lt;p>🤔 You might be wondering how a CPU-based implementation in FireDucks can be
+faster than a GPU-based implementation in cuDF!!&lt;/p>
 &lt;p>This speedup from FireDucks is due to the efficient query planning and optimization that
 is performed by the internal JIT compiler. Instead of executing the input query as it is,
 it attempts to optimize the same by reducing the scope of the input data for the time
@@ -146,6 +148,11 @@ consuming join, groupby etc. operations majorly using the following steps:&lt;/p
 &lt;li>loading only required columns from the input parquet files to reduce the data horizontally&lt;/li>
 &lt;li>performing early filtration to reduce the data vertically&lt;/li>
 &lt;/ul>
+&lt;p>📓 In case of FireDucks lazy-execution mode, when a method like &lt;code>to_parquet&lt;/code>, &lt;code>plot&lt;/code>, &lt;code>print&lt;/code>
+etc. are called, it enables the compiler to start optimizing the accumulated data flow. Once
+the optimization phase is completed, it is executed by a multi-threaded CPU kernel backed by
+arrow memory helping you to experience superfast data processing, along with remarkable
+reduction in the computational memory.&lt;/p>
 &lt;p>The optimized implementation for the same query could be as follows:&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>req_customer_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;c_custkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c_mktsegment&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># selecting (2/8) columns&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>req_lineitem_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_shipdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_extendedprice&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_discount&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># selecting (4/16) columns&lt;/span>
@@ -195,9 +202,12 @@ its performance relies on the underlined GPU specification and how well the prog
 FireDucks can optimize an existing pandas program efficiently like an expert programmer and
 execute the same without any extra overhead, that too on CPU only systems.&lt;/p>
 &lt;p>Being said that, &lt;strong>a GPU version of FireDucks is under dvelopment&lt;/strong>. It internally uses &lt;code>cuDF.pandas&lt;/code>
-for the kernel operations (like groupby, join etc.) while adding the JIT optimization for further
-acceleration as explained in this article. We will be talking about the GPU version of FireDucks
-in details in some other article.&lt;/p>
+for the kernel operations (like groupby, join etc.), while adding the JIT optimization for further
+acceleration as explained in this article. For example, even when you write the query as in the
+first implementation, it would be auto-optimized by the FireDucks compiler similar to the
+optimized implementation and then it will be passed to the cuDF kernel for the execution
+at the GPU side (helping you to experience the query to be finished in ~0.76 sec).
+We will be talking about the GPU version of FireDucks in details in some other article.&lt;/p>
 &lt;p>We look forward your constant feedback to make FireDucks even better.
 Please feel free to get in touch with us in any of your prefered channel mentioned below:&lt;/p>
 &lt;ul>
