@@ -1,4 +1,56 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/ja/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><lastBuildDate>Thu, 19 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/ja/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: GPU版開発におけるpandasとの互換性確保</title><link>https://fireducks-dev.github.io/ja/posts/2024-12-19-araki/</link><pubDate>Thu, 19 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2024-12-19-araki/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/ja/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><lastBuildDate>Fri, 20 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/ja/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: FireDucksのトレースのとりかた</title><link>https://fireducks-dev.github.io/ja/posts/2024-12-20-trace/</link><pubDate>Fri, 20 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2024-12-20-trace/</guid><description>
+&lt;p>FireDucksには，read_csv や groupby, sort などのそれぞれの処理がどれくらいの時間がかかったかを記録するトレース機能があります．
+この記事ではトレース機能の使い方を紹介します．&lt;/p>
+&lt;h2 id="トレースファイルの出力と表示">トレースファイルの出力と表示&lt;/h2>
+&lt;p>トレース機能を使うには，特にプログラムを修正する必要はありません．
+以下のように環境変数を設定して実行するだけでトレース機能を利用することができます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;--trace=3&amp;#34;&lt;/span> python -mfireducks.pandas your_program.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>環境変数を設定してプログラムを実行すると，プログラムを実行したディレクトリに &lt;code>trace.json&lt;/code> というファイルが出来上がります．
+このファイルがトレースファイルです．&lt;/p>
+&lt;p>トレースファイルを表示するためには，トレースビューアー機能を有するウェブブラウザである Microsoft Edge もしくは Google Chrome どちらかを用います．Microsoft Edge であれば &lt;code>edge::tracing&lt;/code>，Google Chrome であれば &lt;code>chrome::tracing&lt;/code> とアドレスバーに入力するとトレースビューアーを起動することができます．&lt;/p>
+&lt;p>以下の画像は，Microsoft Edge でトレースビューアーを起動した様子です．&lt;/p>
+&lt;p>&lt;img src="trace01.png" alt="Edge TraceViewer">&lt;/p>
+&lt;p>Load ボタンをクリックして，トレースファイルを開くと，プログラムの実行トレースがグラフィカルに表示されます．
+以下の画像は，こちらの&lt;a href="https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/">記事&lt;/a>で紹介した polars-tpch benchmark の１クエリの実行トレースです．&lt;/p>
+&lt;p>&lt;img src="trace02.png" alt="TPCH Q01 Trace">&lt;/p>
+&lt;p>&lt;code>top&lt;/code> と表示されているのが，プログラム全体（正しくは import fireducks.pandas をしてからプログラムが終了するまで）の時間です．その下では &lt;code>fireducks.core.evaluate&lt;/code> と大きく２つのブロックにわかれています．これは，fireducks の遅延評価が2回発生していることを意味しています．polars-tpch benchmark の実行では，parquetファイルの読み込みとクエリの実行とを明示的に分けて計測しています．そのため，遅延評価が2つにわかれています．&lt;/p>
+&lt;p>前半の評価では &lt;code>fireducks.read_parquet_with_metadata&lt;/code> という parquet の読み込み処理だけが実行時間を占めていることがわかります．また，マウス操作でズームインすることで，以下のように後半のクエリの実行時間の内訳を詳しくみることもできます．&lt;/p>
+&lt;p>&lt;img src="trace03.png" alt="TPCH Q01 Trace Query Detail">&lt;/p>
+&lt;h2 id="トレースファイル名の変更">トレースファイル名の変更&lt;/h2>
+&lt;p>デフォルトのトレースファイル名は &lt;code>trace.json&lt;/code> でしたが，以下のように &lt;code>--trace-file=foo.json&lt;/code> といったように任意のファイル名を設定することが可能です．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;--trace=3 --trace-file=foo.json&amp;#34;&lt;/span> python -mfireducks.pandas your_program.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="標準エラーへのトレースサマリの出力">標準エラーへのトレースサマリの出力&lt;/h2>
+&lt;p>トレースファイルを出力してウェブブラウザで表示する方法を紹介しましたが，各処理の時間の内訳だけを表示するのであれば，標準エラーにサマリ情報を表示することもできます．&lt;/p>
+&lt;p>サマリの表示方法は，先述のトレースファイル名の変更と同じオプションを用います．ファイル名ではなく &lt;code>--trace-file=-&lt;/code> と指定します．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;--trace=3 --trace-file=-&amp;#34;&lt;/span> python -mfireducks.pandas your_program.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>先の例で用いた polars-tpch benchmark のクエリでの実行例です．
+各処理の実行順などの詳細はわかりませんが，実行時間のサマリを確認することができます．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>elapsed 6.071 sec
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>kernels 5.963 sec 98.22% &lt;span style="color:#ae81ff">101&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fallbacks 0.000 sec 0.00% &lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> duration sec ratio count
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">==&lt;/span> kernel &lt;span style="color:#f92672">==&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.read_parquet_with_metadata 5.453 89.83% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.filter 0.293 4.83% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.groupby_agg 0.089 1.46% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.le.vector.scalar 0.051 0.83% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.mul.vector.vector 0.042 0.69% &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.rsub.vector.scalar 0.023 0.38% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.radd.vector.scalar 0.009 0.15% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.sort_values 0.002 0.03% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.read_parquet_metadata 0.001 0.02% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.project 0.000 0.00% 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">==&lt;/span> fallback &lt;span style="color:#f92672">==&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">==&lt;/span> other &lt;span style="color:#f92672">==&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>top 6.071 100.00% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>create_mlir_func 0.001 0.02% &lt;span style="color:#ae81ff">3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>import pandas 0.000 0.00% &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fire.get_string 0.000 0.00% &lt;span style="color:#ae81ff">22&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="おわりに">おわりに&lt;/h2>
+&lt;p>FireDucks でのトレース機能の使い方を紹介しました．&lt;/p>
+&lt;p>FireDucks を利用していると，なぜか遅くなったということがあるかもしれません．
+その場合は，この記事を参考にトレースをとってみると，遅くなった原因の処理を見つけられるかもしれません．&lt;/p>
+&lt;p>トレース機能も使って FireDucks を使いこなしていただけると幸いです．&lt;/p></description></item><item><title>Posts: GPU版開発におけるpandasとの互換性確保</title><link>https://fireducks-dev.github.io/ja/posts/2024-12-19-araki/</link><pubDate>Thu, 19 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2024-12-19-araki/</guid><description>
 &lt;p>現在，FireDucksのGPU版の開発を進めています．&lt;/p>
 &lt;p>FireDucksは，プログラムを実行時に中間言語に変換し，この中間言語上で最適化を行った後，中間言語をバックエンド向けにコンパイルし，実行するアーキテクチャになっています．現在公開されているCPU版FireDucksでは，このバックエンドがCPU向けになっています．GPU版の開発においては，バックエンドをGPUに変更します．これにより，CPU版向けに開発してきた中間言語への変換や最適化をそのまま利用することができます．&lt;/p>
 &lt;p>GPU版バックエンドの開発には，NVIDIAのcuDFというライブラリを活用しています．我々の中間言語はpandasのAPIにおおむね対応しており，cuDFはpandasと類似したAPIを提供しているため，バックエンドの開発は一見容易に見えます．しかし，cuDFが提供する機能はpandasとは微妙に異なるため，pandasとの互換性を保つためには工夫が必要です．&lt;/p>

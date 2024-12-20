@@ -1,4 +1,57 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Thu, 19 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Ensuring compatibility with pandas in the GPU version of FireDucks</title><link>https://fireducks-dev.github.io/posts/2024-12-19-araki-en/</link><pubDate>Thu, 19 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/2024-12-19-araki-en/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Fri, 20 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: How to take traces in FireDucks</title><link>https://fireducks-dev.github.io/posts/2024-12-20-trace/</link><pubDate>Fri, 20 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/2024-12-20-trace/</guid><description>
+&lt;p>FireDucks has a trace function that records how long each process such as read_csv, groupby, sort, etc. takes.
+This article introduces how to use the trace function.&lt;/p>
+&lt;h2 id="how-to-output-and-display-trace-files">How to output and display trace files&lt;/h2>
+&lt;p>To use the trace function, you do not need to modify the program.
+Simply set the environment variables as shown below and execute the program to use the trace function.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;--trace=3&amp;#34;&lt;/span> python -mfireducks.pandas your_program.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>After setting the environment variables and executing the program, a file named &lt;code>trace.json&lt;/code> is created in the directory where the program was executed.
+This file is the trace file.&lt;/p>
+&lt;p>To view a trace file, use either Microsoft Edge or Google Chrome, a web browser with trace viewer functionality.
+You can start the trace viewer by typing &lt;code>edge::tracing&lt;/code> for Microsoft Edge or &lt;code>chrome::tracing&lt;/code> for Google Chrome in the address bar.&lt;/p>
+&lt;p>The following image shows the Trace Viewer running in Microsoft Edge.&lt;/p>
+&lt;p>&lt;img src="trace01.png" alt="Edge TraceViewer">&lt;/p>
+&lt;p>Click the Load button to open the trace file. The execution trace of the program will be displayed graphically.
+The following image shows the execution trace of one query of the polars-tpch benchmark introduced in this [article] (&lt;a href="https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/)">https://fireducks-dev.github.io/posts/20241206_update_polars-tpch/)&lt;/a>.&lt;/p>
+&lt;p>&lt;img src="trace02.png" alt="TPCH Q01 Trace">&lt;/p>
+&lt;p>The &lt;code>top&lt;/code> shows the time of the whole program (or, more correctly, the time between &lt;code>import fireducks.pandas&lt;/code> and the end of the program). Below that, &lt;code>fireducks.core.evaluate&lt;/code> is divided into two major blocks. The polars-tpch benchmark run explicitly separates the reading of the parquet file and the execution of the query. Therefore, the evaluation is split into two.&lt;/p>
+&lt;p>In the first half of the evaluation, you can see that only the &lt;code>fireducks.read_parquet_with_metadata&lt;/code> parquet reading process accounts for the execution time. You can also zoom in with the mouse to get a more detailed breakdown of the execution time for the second half of the query, as shown below.&lt;/p>
+&lt;p>&lt;img src="trace03.png" alt="TPCH Q01 Trace Query Detail">&lt;/p>
+&lt;h2 id="how-to-change-the-trace-file-name">How to change the trace file name&lt;/h2>
+&lt;p>The default trace file name is &lt;code>trace.json&lt;/code>, but you can set an arbitrary file name as follows: &lt;code>--trace-file=foo.json&lt;/code>.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;--trace=3 --trace-file=foo.json&amp;#34;&lt;/span> python -mfireducks.pandas your_program.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="how-to-output-trace-summary-to-standard-error">How to output trace summary to standard error&lt;/h2>
+&lt;p>If you only want to see a breakdown of the time spent on each process, you can also display summary information in standard error.&lt;/p>
+&lt;p>The summary is displayed using the same options described above. Use &lt;code>--trace-file=-&lt;/code> instead of the file name.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;--trace=3 --trace-file=-&amp;#34;&lt;/span> python -mfireducks.pandas your_program.py
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This is an example of the execution of the polars-tpch benchmark query used in the previous example.
+Although details such as the order of execution of each process are not available, a summary of the execution time can be viewed.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>elapsed 6.071 sec
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>kernels 5.963 sec 98.22% &lt;span style="color:#ae81ff">101&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fallbacks 0.000 sec 0.00% &lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> duration sec ratio count
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">==&lt;/span> kernel &lt;span style="color:#f92672">==&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.read_parquet_with_metadata 5.453 89.83% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.filter 0.293 4.83% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.groupby_agg 0.089 1.46% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.le.vector.scalar 0.051 0.83% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.mul.vector.vector 0.042 0.69% &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.rsub.vector.scalar 0.023 0.38% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.radd.vector.scalar 0.009 0.15% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.sort_values 0.002 0.03% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.read_parquet_metadata 0.001 0.02% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fireducks.project 0.000 0.00% 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">==&lt;/span> fallback &lt;span style="color:#f92672">==&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">==&lt;/span> other &lt;span style="color:#f92672">==&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>top 6.071 100.00% &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>create_mlir_func 0.001 0.02% &lt;span style="color:#ae81ff">3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>import pandas 0.000 0.00% &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>fire.get_string 0.000 0.00% &lt;span style="color:#ae81ff">22&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="conclusion">Conclusion&lt;/h2>
+&lt;p>This article has introduced how to use the trace function in FireDucks.&lt;/p>
+&lt;p>When using FireDucks, there may be times when you notice a slowdown.
+In that case, you may be able to find the process that caused the slowdown by tracing with the help of this article.&lt;/p>
+&lt;p>We hope that you will make full use of FireDucks by using the trace function.&lt;/p></description></item><item><title>Posts: Ensuring compatibility with pandas in the GPU version of FireDucks</title><link>https://fireducks-dev.github.io/posts/2024-12-19-araki-en/</link><pubDate>Thu, 19 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/2024-12-19-araki-en/</guid><description>
 &lt;p>We are currently developing a GPU version of FireDucks.&lt;/p>
 &lt;p>FireDucks is built with an architecture that translates programs into an intermediate representation at runtime, optimizes them in this intermediate representation, and then compiles and executes the intermediate representation for the backend. The currently released CPU version of FireDucks has a backend for CPUs. In the development of the GPU version, the backend is changed to a GPU. This allows us to use the translation to and optimization of the intermediate representation developed for the CPU version as is.&lt;/p>
 &lt;p>In developing the GPU backend, we are making use of NVIDIA&amp;rsquo;s cuDF library. Our intermediate representation is roughly compatible with the pandas API, and cuDF provides similar API to pandas, so at first glance the backend development seems straightforward. However, the functions provided by cuDF are slightly different from those provided by pandas, so some ingenuity is required to maintain compatibility with pandas.&lt;/p>
