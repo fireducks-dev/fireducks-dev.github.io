@@ -7,7 +7,7 @@
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$ FIREDUCKS_FLAGS&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;--trace=3&amp;#34;&lt;/span> python -mfireducks.pandas your_program.py
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>環境変数を設定してプログラムを実行すると，プログラムを実行したディレクトリに &lt;code>trace.json&lt;/code> というファイルが出来上がります．
 このファイルがトレースファイルです．&lt;/p>
-&lt;p>トレースファイルを表示するためには，トレースビューアー機能を有するウェブブラウザである Microsoft Edge もしくは Google Chrome どちらかを用います．Microsoft Edge であれば &lt;code>edge::tracing&lt;/code>，Google Chrome であれば &lt;code>chrome::tracing&lt;/code> とアドレスバーに入力するとトレースビューアーを起動することができます．&lt;/p>
+&lt;p>トレースファイルを表示するためには，トレースビューアー機能を有するウェブブラウザである Microsoft Edge もしくは Google Chrome どちらかを用います．Microsoft Edge であれば &lt;code>edge://tracing&lt;/code>，Google Chrome であれば &lt;code>chrome://tracing&lt;/code> とアドレスバーに入力するとトレースビューアーを起動することができます．&lt;/p>
 &lt;p>以下の画像は，Microsoft Edge でトレースビューアーを起動した様子です．&lt;/p>
 &lt;p>&lt;img src="trace01.png" alt="Edge TraceViewer">&lt;/p>
 &lt;p>Load ボタンをクリックして，トレースファイルを開くと，プログラムの実行トレースがグラフィカルに表示されます．

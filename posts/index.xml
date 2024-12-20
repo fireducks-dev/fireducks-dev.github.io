@@ -8,7 +8,7 @@ Simply set the environment variables as shown below and execute the program to u
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>After setting the environment variables and executing the program, a file named &lt;code>trace.json&lt;/code> is created in the directory where the program was executed.
 This file is the trace file.&lt;/p>
 &lt;p>To view a trace file, use either Microsoft Edge or Google Chrome, a web browser with trace viewer functionality.
-You can start the trace viewer by typing &lt;code>edge::tracing&lt;/code> for Microsoft Edge or &lt;code>chrome::tracing&lt;/code> for Google Chrome in the address bar.&lt;/p>
+You can start the trace viewer by typing &lt;code>edge://tracing&lt;/code> for Microsoft Edge or &lt;code>chrome://tracing&lt;/code> for Google Chrome in the address bar.&lt;/p>
 &lt;p>The following image shows the Trace Viewer running in Microsoft Edge.&lt;/p>
 &lt;p>&lt;img src="trace01.png" alt="Edge TraceViewer">&lt;/p>
 &lt;p>Click the Load button to open the trace file. The execution trace of the program will be displayed graphically.
