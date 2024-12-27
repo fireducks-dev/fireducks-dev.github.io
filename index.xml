@@ -1,4 +1,335 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Fri, 20 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Exploring performance benefits of FireDucks over cuDF</title><link>https://fireducks-dev.github.io/posts/cudf_vs_fireducks/</link><pubDate>Wed, 18 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/cudf_vs_fireducks/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Thu, 26 Dec 2024 09:35:10 +0900</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Pitfalls of Time Measurement for FireDucks with %%time in Notebooks</title><link>https://fireducks-dev.github.io/posts/2024-12-26-time-pitfalls/</link><pubDate>Thu, 26 Dec 2024 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/2024-12-26-time-pitfalls/</guid><description>
+&lt;p>This is Osamu Daido from the FireDucks development team. In today's developers' blog, I would like to present a subtle pitfall in time measurement.&lt;/p>
+&lt;h2 id="quick-overview">Quick Overview&lt;/h2>
+&lt;p>When measuring the execution time of FireDucks using the &lt;code>%%time&lt;/code> magic command in IPython Notebooks, make sure to always call the &lt;code>_evaluate()&lt;/code> method of DataFrames or Series to ensure proper evaluation!&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;input.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="time-measurement-in-notebooks">Time Measurement in Notebooks&lt;/h2>
+&lt;p>Jupyter and other IPython Notebooks provide the &lt;code>%%time&lt;/code> magic command to measure the execution time of the code written in a cell. For instance, a single percent sign &lt;code>%time&lt;/code> measures the execution time of only one line of code, while double percent signs &lt;code>%%time&lt;/code> measure the execution time for the entire cell. You may be interested in or curious about measuring the execution time of FireDucks because it can process data faster while offering the same API as pandas.&lt;/p>
+&lt;p>However&amp;hellip;, hmm? Do you think the following time measurement is correct?&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>head()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;pre>&lt;code>CPU times: user 3.37 ms, sys: 4.06 ms, total: 7.43 ms
+Wall time: 6.87 ms
+&lt;/code>&lt;/pre>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">0&lt;/td>
+&lt;td style="text-align:right">16.99&lt;/td>
+&lt;td style="text-align:right">1.01&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;td style="text-align:right">10.34&lt;/td>
+&lt;td style="text-align:right">1.66&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;td style="text-align:right">21.01&lt;/td>
+&lt;td style="text-align:right">3.50&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;td style="text-align:right">23.68&lt;/td>
+&lt;td style="text-align:right">3.31&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">4&lt;/td>
+&lt;td style="text-align:right">24.59&lt;/td>
+&lt;td style="text-align:right">3.61&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">4&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;/blockquote>
+&lt;h3 id="time-measurement-for-fireducks">Time Measurement for FireDucks&lt;/h3>
+&lt;p>As explained on &lt;a href="https://fireducks-dev.github.io/docs/user-guide/02-exec-model/">the execution model page&lt;/a>, FireDucks uses a lazy execution model. In simple terms, FireDucks DataFrames do not begin actual processing until explicitly displayed on the screen with functions like &lt;code>print()&lt;/code> or &lt;code>display()&lt;/code>, or when the &lt;code>_evaluate()&lt;/code> method is called. FireDucks can process data more quickly by optimizing the accumulated operations before executing them. This execution of accumulated operations is referred to as &amp;ldquo;evaluation.&amp;rdquo;&lt;/p>
+&lt;p>In IPython Notebooks, if the last line of a cell is not an assignment statement but simply a value, it is automatically displayed on the screen, similar to the Python interpreter's REPL. In IPython terms, it's as if &lt;code>display()&lt;/code> is automatically called. This means that if you place a FireDucks DataFrame at the end of a cell, it will also be automatically evaluated.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#75715e"># THIS!&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>However, there is a subtle pitfall when you want to measure execution time using the &lt;code>%%time&lt;/code> magic command. Just because placing a FireDucks DataFrame at the end of a cell triggers automatic evaluation, it does not necessarily mean that the correct execution time is measured.&lt;/p>
+&lt;h3 id="example-of-incorrect-time-measurement">Example of Incorrect Time Measurement&lt;/h3>
+&lt;p>I prepared a CSV file of about 10GB for experimentation. When executing the following cell, something strange happens.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips10gb.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;pre>&lt;code>CPU times: user 18.2 ms, sys: 4.31 ms, total: 22.5 ms
+Wall time: 15.2 ms
+&lt;/code>&lt;/pre>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">67&lt;/td>
+&lt;td style="text-align:right">3.07&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">92&lt;/td>
+&lt;td style="text-align:right">5.75&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Fri&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815362&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815606&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>319815680 rows x 7 columns&lt;/p>
+&lt;/blockquote>
+&lt;p>Let's look at the line labeled &amp;ldquo;Wall time.&amp;rdquo; Imagine if it only took 15 milliseconds to read and sort data with 300 million rows — wouldn't that be incredible? In reality, it took about 10 seconds from the start of the cell's execution until the results were displayed. You might wonder, &amp;ldquo;The results are displayed on the screen, so shouldn't they be properly evaluated?&amp;rdquo; That's half true and half false.&lt;/p>
+&lt;p>In fact, with this approach, the evaluation of the DataFrame begins only after the &lt;code>%%time&lt;/code> timer has stopped. In other words, because the order is &lt;strong>timer stops → evaluation → display&lt;/strong>, the actual processing of the DataFrame is outside the measurement range of &lt;code>%%time&lt;/code>.&lt;/p>
+&lt;h3 id="example-of-correct-time-measurement">Example of Correct Time Measurement&lt;/h3>
+&lt;p>Therefore, even in IPython Notebooks, when you want to measure execution time, make sure to explicitly call the &lt;code>_evaluate()&lt;/code> method of DataFrames to properly evaluate them. Writing it as shown below will execute in the order of &lt;strong>evaluation → timer stops → display&lt;/strong>. This way, the actual processing of the DataFrame falls within the measurement range of &lt;code>%%time&lt;/code>.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips10gb.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;pre>&lt;code>CPU times: user 3min 58s, sys: 1min 2s, total: 5min
+Wall time: 11.1 s
+&lt;/code>&lt;/pre>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">67&lt;/td>
+&lt;td style="text-align:right">3.07&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">92&lt;/td>
+&lt;td style="text-align:right">5.75&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Fri&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815362&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815606&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>319815680 rows x 7 columns&lt;/p>
+&lt;/blockquote>
+&lt;h3 id="slightly-different-solution">Slightly Different Solution&lt;/h3>
+&lt;p>If you write it as shown below, the order will be &lt;strong>evaluation → display → timer stops&lt;/strong>. In this case, the process to display the DataFrame on the screen inadvertently becomes part of the time measurement. Do you notice any other differences? You might notice that the order of the DataFrame output and the timing result output is reversed.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips10gb.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>display(df)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">67&lt;/td>
+&lt;td style="text-align:right">3.07&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">92&lt;/td>
+&lt;td style="text-align:right">5.75&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Fri&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815362&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815606&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>319815680 rows x 7 columns&lt;/p>
+&lt;pre>&lt;code>CPU times: user 3min 58s, sys: 55.4 s, total: 4min 53s
+Wall time: 10.6 s
+&lt;/code>&lt;/pre>
+&lt;/blockquote>
+&lt;h2 id="wrap-up">Wrap-up&lt;/h2>
+&lt;p>FireDucks has the same API as pandas while adopting a lazy evaluation mechanism, so it’s important to pay attention to such subtle details when measuring processing time. However, FireDucks allows you to speed up processing while using nearly the same code as you would with pandas, making it a powerful ally for data science.&lt;/p>
+&lt;p>Recently, many people have shown interest in FireDucks, and we are receiving more feedback about its improved speed as well as bug reports. As the development team, we are committed to making sure FireDucks gets widely used and continues to be valuable over the long term. Please stay tuned for future updates!&lt;/p>
+&lt;p>May the Acceleration be with you, FireDucks Development Team&lt;/p></description></item><item><title>Posts: Exploring performance benefits of FireDucks over cuDF</title><link>https://fireducks-dev.github.io/posts/cudf_vs_fireducks/</link><pubDate>Wed, 18 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/cudf_vs_fireducks/</guid><description>
 &lt;p>&lt;a href="https://www.anaconda.com/resources/whitepapers/state-of-data-science-2020">Research&lt;/a> says that Data
 scientists spend about 45% of their time on data preparation tasks, including loading (19%) and
 cleaning (26%) the data. &lt;a href="https://pandas.pydata.org/">Pandas&lt;/a> is one of the most popular python

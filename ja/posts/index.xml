@@ -1,4 +1,335 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/ja/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><lastBuildDate>Fri, 20 Dec 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/ja/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: FireDucksのトレースのとりかた</title><link>https://fireducks-dev.github.io/ja/posts/2024-12-20-trace/</link><pubDate>Fri, 20 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2024-12-20-trace/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Posts</title><link>https://fireducks-dev.github.io/ja/posts/</link><description>Recent content in Posts on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><lastBuildDate>Thu, 26 Dec 2024 09:35:10 +0900</lastBuildDate><atom:link href="https://fireducks-dev.github.io/ja/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Notebook の %%time で FireDucks の時間計測をするときの落とし穴</title><link>https://fireducks-dev.github.io/ja/posts/2024-12-26-time-pitfalls/</link><pubDate>Thu, 26 Dec 2024 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2024-12-26-time-pitfalls/</guid><description>
+&lt;p>FireDucks 開発チームの大道です．今回の開発者ブログでは時間計測のちょっとした落とし穴についてご紹介したいと思います．&lt;/p>
+&lt;h2 id="まずは結論">まずは結論&lt;/h2>
+&lt;p>IPython Notebook で提供されている &lt;code>%%time&lt;/code> マジックコマンドで FireDucks の時間計測をするときも，必ず &lt;code>_evaluate()&lt;/code> メソッドを呼んで確実に評価が行われるようにしましょう！&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;input.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="notebook-における時間計測">Notebook における時間計測&lt;/h2>
+&lt;p>Jupyter などの IPython Notebook では，コードを書いたセルの実行時間を測定するために &lt;code>%%time&lt;/code> というマジックコマンドが提供されています．ちなみにパーセント記号ひとつの &lt;code>%time&lt;/code> だとその行だけの実行時間の計測で，パーセント記号ふたつの &lt;code>%%time&lt;/code> だとセルの実行時間の計測です．FireDucks は pandas と同じ API で pandas よりも高速に処理できることが特徴ですので，処理時間を計測してみた方や計測してみたいと思った方もいらっしゃるでしょう．&lt;/p>
+&lt;p>しかし…，おや？ 以下の処理時間計測は正しいのでしょうか？&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>head()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;pre>&lt;code>CPU times: user 3.37 ms, sys: 4.06 ms, total: 7.43 ms
+Wall time: 6.87 ms
+&lt;/code>&lt;/pre>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">0&lt;/td>
+&lt;td style="text-align:right">16.99&lt;/td>
+&lt;td style="text-align:right">1.01&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;td style="text-align:right">10.34&lt;/td>
+&lt;td style="text-align:right">1.66&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;td style="text-align:right">21.01&lt;/td>
+&lt;td style="text-align:right">3.50&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;td style="text-align:right">23.68&lt;/td>
+&lt;td style="text-align:right">3.31&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">4&lt;/td>
+&lt;td style="text-align:right">24.59&lt;/td>
+&lt;td style="text-align:right">3.61&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">No&lt;/td>
+&lt;td style="text-align:right">Sun&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">4&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;/blockquote>
+&lt;h3 id="fireducks-の時間計測">FireDucks の時間計測&lt;/h3>
+&lt;p>&lt;a href="https://fireducks-dev.github.io/ja/docs/user-guide/02-exec-model/">実行モデルの解説ページ&lt;/a>に記載している通り，FireDucks は遅延実行モデルを採用しています．簡単に言うと FireDucks のデータフレームは，例えば &lt;code>print()&lt;/code> や &lt;code>display()&lt;/code> で画面に表示させたり，データフレームの &lt;code>_evaluate()&lt;/code> メソッドを明示的に呼んだりするまでは，実際の処理が始まらずに溜め込まれた状態のままになるのです．FireDucks は溜め込んでいた処理を実行する前に最適化を行うことでより高速に処理できるようになっており，溜め込んでいた処理を実際に実行することを「評価」と呼びます．&lt;/p>
+&lt;p>ところで，IPython Notebook ではセルの最後に代入文ではなく値が置かれていると，Python インタープリターの REPL と同様に，値が自動で画面に出力されます．つまり IPython 的に言うと自動的に &lt;code>display()&lt;/code> が呼ばれているということであるため，FireDucks のデータフレームはセルの最後に置いておけば自動で評価もされるということになります．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#75715e"># ← これ&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>しかし，マジックコマンド &lt;code>%%time&lt;/code> で処理時間を計測したい場合にはちょっとした落とし穴がありました．FireDucks データフレームをセルの最後に置いておけば自動で評価されるということと，それで正しい時間が計測できているかということは別の問題だったのです．&lt;/p>
+&lt;h3 id="誤った時間計測の例">誤った時間計測の例&lt;/h3>
+&lt;p>10GB 弱の csv ファイルを用意して実験してみました．以下のようなセルを実行すると奇妙なことが起こります．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips10gb.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;pre>&lt;code>CPU times: user 18.2 ms, sys: 4.31 ms, total: 22.5 ms
+Wall time: 15.2 ms
+&lt;/code>&lt;/pre>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">67&lt;/td>
+&lt;td style="text-align:right">3.07&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">92&lt;/td>
+&lt;td style="text-align:right">5.75&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Fri&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815362&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815606&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>319815680 rows x 7 columns&lt;/p>
+&lt;/blockquote>
+&lt;p>Wall time と書かれているところを見ましょう．3億行もあるデータを読み込んでソートするのに 15 ミリ秒しかかかっていないのだとしたらすごいことですね．実際にはそんなことはなく，このセルの実行を開始してから結果が表示されるまでに10秒ぐらい待たされました．結果が画面に出力されているのだから，きちんと評価されているはずでは…？ と思いましたが，それは半分正しく，半分間違っていました．&lt;/p>
+&lt;p>実はこの書き方の場合，&lt;code>%%time&lt;/code> のタイマーが止まった後でデータフレームの評価が始まってしまっているのです．つまり，&lt;strong>タイマー停止 → 評価 → 表示&lt;/strong> の順序になってしまっているため，データフレームの実際の処理が &lt;code>%%time&lt;/code> の測定範囲外にあるということなのです．&lt;/p>
+&lt;h3 id="正しい時間計測の例">正しい時間計測の例&lt;/h3>
+&lt;p>というわけで，処理時間を計測したい場合は IPython Notebook でも明示的にデータフレームの &lt;code>_evaluate()&lt;/code> メソッドを呼び出し，きちんと評価しましょう．以下のように書くと，&lt;strong>評価 → タイマー停止 → 表示&lt;/strong> の順序で実行されるため，データフレームの実際の処理が &lt;code>%%time&lt;/code> の測定範囲に入ります．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips10gb.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>_evaluate()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;pre>&lt;code>CPU times: user 3min 58s, sys: 1min 2s, total: 5min
+Wall time: 11.1 s
+&lt;/code>&lt;/pre>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">67&lt;/td>
+&lt;td style="text-align:right">3.07&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">92&lt;/td>
+&lt;td style="text-align:right">5.75&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Fri&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815362&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815606&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>319815680 rows x 7 columns&lt;/p>
+&lt;/blockquote>
+&lt;h3 id="別解">別解？&lt;/h3>
+&lt;p>ちなみに以下のように書くと，&lt;strong>評価 → 表示 → タイマー停止&lt;/strong> の順序になります．この場合，データフレームを画面に表示するための処理も時間計測の範囲内に含まれることになるため，僅かではありますが時間計測の意味が変わってきます．データフレームの出力と計測結果の出力の順序も入れ替わっていますね．&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">%%&lt;/span>time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_csv(&lt;span style="color:#e6db74">&amp;#34;sample-dataset-tips10gb.csv&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>df &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;tip&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>display(df)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;blockquote>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">&lt;/th>
+&lt;th style="text-align:right">total_bill&lt;/th>
+&lt;th style="text-align:right">tip&lt;/th>
+&lt;th style="text-align:right">sex&lt;/th>
+&lt;th style="text-align:right">smoker&lt;/th>
+&lt;th style="text-align:right">day&lt;/th>
+&lt;th style="text-align:right">time&lt;/th>
+&lt;th style="text-align:right">size&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">67&lt;/td>
+&lt;td style="text-align:right">3.07&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">92&lt;/td>
+&lt;td style="text-align:right">5.75&lt;/td>
+&lt;td style="text-align:right">1.0&lt;/td>
+&lt;td style="text-align:right">Female&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Fri&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">2&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;td style="text-align:right">&amp;hellip;&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815362&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">319815606&lt;/td>
+&lt;td style="text-align:right">50.81&lt;/td>
+&lt;td style="text-align:right">10.0&lt;/td>
+&lt;td style="text-align:right">Male&lt;/td>
+&lt;td style="text-align:right">Yes&lt;/td>
+&lt;td style="text-align:right">Sat&lt;/td>
+&lt;td style="text-align:right">Dinner&lt;/td>
+&lt;td style="text-align:right">3&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>319815680 rows x 7 columns&lt;/p>
+&lt;pre>&lt;code>CPU times: user 3min 58s, sys: 55.4 s, total: 4min 53s
+Wall time: 10.6 s
+&lt;/code>&lt;/pre>
+&lt;/blockquote>
+&lt;h2 id="まとめにかえて">まとめにかえて&lt;/h2>
+&lt;p>FireDucks は pandas と同じ API を維持しながら遅延評価の仕組みを取り入れているため，処理時間の計測においてはこのようなちょっとしたことにも気をつける必要があります．しかし pandas とほとんど同じコードのまま処理を高速化できる FireDucks は，データサイエンスの強い味方になってくれるでしょう．&lt;/p>
+&lt;p>最近は多くの方が FireDucks に興味を示してくださり，速くなったという声やバグレポートなども増えつつあります．私たち開発チームとしても，FireDucks を広く，末永く使っていただけるよう頑張っています！ 今後のアップデートにも是非ご注目ください．&lt;/p>
+&lt;p>May the Acceleration be with you, FireDucks 開発チーム&lt;/p></description></item><item><title>Posts: FireDucksのトレースのとりかた</title><link>https://fireducks-dev.github.io/ja/posts/2024-12-20-trace/</link><pubDate>Fri, 20 Dec 2024 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/posts/2024-12-20-trace/</guid><description>
 &lt;p>FireDucksには，read_csv や groupby, sort などのそれぞれの処理がどれくらいの時間がかかったかを記録するトレース機能があります．
 この記事ではトレース機能の使い方を紹介します．&lt;/p>
 &lt;h2 id="トレースファイルの出力と表示">トレースファイルの出力と表示&lt;/h2>
