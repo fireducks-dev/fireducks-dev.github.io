@@ -1,4 +1,199 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Thu, 26 Dec 2024 09:35:10 +0900</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Pitfalls of Time Measurement for FireDucks with %%time in Notebooks</title><link>https://fireducks-dev.github.io/posts/2024-12-26-time-pitfalls/</link><pubDate>Thu, 26 Dec 2024 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/2024-12-26-time-pitfalls/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – FireDucks</title><link>https://fireducks-dev.github.io/</link><description>Recent content on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Fri, 31 Jan 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Posts: Unveiling the Optimization Benefit of FireDucks Lazy Execution: Part #3</title><link>https://fireducks-dev.github.io/posts/data_flow_optimization/</link><pubDate>Fri, 31 Jan 2025 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/posts/data_flow_optimization/</guid><description>
+&lt;p>In the previous &lt;a href="../efficient_caching">article&lt;/a>, we have talked about how FireDucks lazy-execution can take care of the
+caching for the intermediate results in order to avoid recomputation of an expensive operation.
+In today&amp;rsquo;s article, we will focus on the &lt;strong>efficient data flow optimization&lt;/strong> by its JIT compiler.
+We will first try to understand some best practices when performing large-scale data analysis in pandas
+and then discuss how those can be automatically taken care by FireDucks lazy execution model.&lt;/p>
+&lt;h2 id="challenge-1">Challenge #1&lt;/h2>
+&lt;p>Let&amp;rsquo;s consider the following two queries solving the same problem: &lt;em>Find top 2 &amp;ldquo;A&amp;rdquo; based on the &amp;ldquo;B&amp;rdquo; column&lt;/em>.&lt;/p>
+&lt;p>👉 &lt;strong>Can you guess which one is better from performance point of view?&lt;/strong>&lt;/p>
+&lt;p>(1) version 1&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>res &lt;span style="color:#f92672">=&lt;/span> df&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>(2) version 2&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>tmp &lt;span style="color:#f92672">=&lt;/span> df[[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>res &lt;span style="color:#f92672">=&lt;/span> tmp&lt;span style="color:#f92672">.&lt;/span>sort_values(by&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Well, when we conducted this quiz in one of the recent Data Science events,
+45% of the participants answered the first one is more efficient, while the remaining 55% answered the second one is more efficient.&lt;/p>
+&lt;p>Congratulations, if your answer is (2) as well. 👏&lt;/p>
+&lt;p>In real world situation the target data might have many columns and when we invoked sort operation on &lt;code>df&lt;/code> instance,
+it performed sorting the entire data involving a significant cost in terms of memory and computational power.&lt;/p>
+&lt;p>As depicted in the following diagram, if the data have columns from &amp;lsquo;a&amp;rsquo; to &amp;lsquo;j&amp;rsquo;, when performing the first query,
+it also sorts the column &amp;lsquo;c&amp;rsquo; to &amp;lsquo;j&amp;rsquo; that is not of our interest. Hence, it is a wise call to create a view of
+the part of data that is of our interest (as shown in the following figure) before performing an computationally intensive operation
+like sort, groupby, join etc. At this we can save significant amount of runtime memory and computational time.
+Such optimization is typically known as &lt;code>projection pushdown&lt;/code>.
+&lt;img src="pushdown_projection.png" alt="projection pushdown example">&lt;/p>
+&lt;h2 id="challenge-2">Challenge #2&lt;/h2>
+&lt;p>Let&amp;rsquo;s now consider another example:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>m &lt;span style="color:#f92672">=&lt;/span> employee&lt;span style="color:#f92672">.&lt;/span>merge(country, on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;C_Code&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f &lt;span style="color:#f92672">=&lt;/span> m[m[&lt;span style="color:#e6db74">&amp;#34;Gender&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Male&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>r &lt;span style="color:#f92672">=&lt;/span> f&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;C_Name&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;E_Name&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>count()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The following diagram illustrates the operations that takes place while executing the query above:
+&lt;img src="illustration1.png" alt="country-wise count of male employees">&lt;/p>
+&lt;p>👉 &lt;strong>Can you guess the performance bottleneck involved in the above query?&lt;/strong>&lt;/p>
+&lt;p>Probably you guessed it correct!!&lt;/p>
+&lt;p>The query wants to analyze only the &lt;code>male&lt;/code> employees.
+Then why to include all the employees at the very first step while joining the two dataframes &lt;code>employee&lt;/code> and &lt;code>country&lt;/code>?
+We could simply filter only the male employees from the &lt;code>employee&lt;/code> data and
+perform the rest of the operations like merge, groupby etc. on the filtered result as shown below.
+At this we could save significant execution time and memory during the expensive merge operation.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>f &lt;span style="color:#f92672">=&lt;/span> employee[employee[&lt;span style="color:#e6db74">&amp;#34;Gender&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Male&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>m &lt;span style="color:#f92672">=&lt;/span> f&lt;span style="color:#f92672">.&lt;/span>merge(country, on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;C_Code&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>r &lt;span style="color:#f92672">=&lt;/span> m&lt;span style="color:#f92672">.&lt;/span>groupby(&lt;span style="color:#e6db74">&amp;#34;C_Name&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;E_Name&amp;#34;&lt;/span>]&lt;span style="color:#f92672">.&lt;/span>count()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Such optimization is typically known as &lt;code>predicate pushdown&lt;/code>.
+&lt;img src="predicate_pushdown.png" alt="predicate pushdown example">&lt;/p>
+&lt;h2 id="lets-follow-these-best-practices">Let&amp;rsquo;s follow these best practices&lt;/h2>
+&lt;p>When dealing with large-scale data, sometime we might not be interested on all part of the data.
+Hence, its always the best practice to reduce the scope of your data before applying an
+expensive operation on it to reduce a significant amount of runtime memory and computational time.&lt;/p>
+&lt;ul>
+&lt;li>When it is known that you are going to perform an operation that involves only some of the columns,
+it is recommended to project the target columns first to reduce it in the horizontal direction.&lt;/li>
+&lt;li>Again, if your operation targets only some selected rows of the data,
+it is recommended to filter the target rows before performing the operation to reduce it further in the vertical direction.&lt;/li>
+&lt;/ul>
+&lt;p>For example, let&amp;rsquo;s consider the below example:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>sort_values(&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>query(&lt;span style="color:#e6db74">&amp;#34;B &amp;gt; 1&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;E&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Let&amp;rsquo;s consider the data with following color codes, where the expected sorted order is: &lt;strong>yellow, red, green, blue.&lt;/strong>&lt;/p>
+&lt;p>Also, let&amp;rsquo;s assume B=1 for darker shade and B=2 for lighter shade.
+The flow of the above operation will be as follows:
+&lt;img src="illustration2.png" alt="sample data flow">&lt;/p>
+&lt;p>As you can see the columns &lt;code>C&lt;/code> and &lt;code>D&lt;/code> have been used in all the first three steps, but they have never been required in the final result.
+Also, the sort operation is performed on all the rows of the data, whereas we are only interested in the data of the lighter shades.&lt;/p>
+&lt;p>Hence, the optimized data flow could be as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>df&lt;span style="color:#f92672">.&lt;/span>loc[:, [&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;B&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;E&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>query(&lt;span style="color:#e6db74">&amp;#34;B &amp;gt; 1&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>sort_values(&lt;span style="color:#e6db74">&amp;#34;A&amp;#34;&lt;/span>)[&lt;span style="color:#e6db74">&amp;#34;E&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>It efficiently reduces the data in the horizontal (applying projection pushdown) and vertical (applying predicate pushdown) direction,
+before applying the expensive sort operation as depicted follows:
+&lt;img src="illustration3.png" alt="sample optimized data flow">&lt;/p>
+&lt;h2 id="case-study">Case Study&lt;/h2>
+&lt;p>Now let&amp;rsquo;s understand how such optimization can be useful in real world situations.&lt;/p>
+&lt;p>The &lt;a href="https://www.tpc.org/tpch/">TPC-H&lt;/a> is a decision support benchmark that consists of a suite of business-oriented ad-hoc queries and concurrent data modifications.
+We will use &lt;a href="https://www.tpc.org/TPC_Documents_Current_Versions/pdf/TPC-H_v3.0.1.pdf#page=33">Query-3&lt;/a> as an example in this demonstration that deals with three large tables,
+namely &lt;code>lineitem&lt;/code>, &lt;code>customer&lt;/code>, and &lt;code>orders&lt;/code> with complex join, groupby, sort etc.&lt;/p>
+&lt;p>The original query was written in SQL. We can realize the following pandas equaivalent of the same query:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">q3&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;customer.parquet&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>merge(pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;orders.parquet&amp;#34;&lt;/span>), left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;c_custkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_custkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>merge(pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;lineitem.parquet&amp;#34;&lt;/span>), left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_orderkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>pipe(&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[df[&lt;span style="color:#e6db74">&amp;#34;c_mktsegment&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;BUILDING&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>pipe(&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[df[&lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;&lt;/span> datetime&lt;span style="color:#f92672">.&lt;/span>date(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>pipe(&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[df[&lt;span style="color:#e6db74">&amp;#34;l_shipdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> datetime&lt;span style="color:#f92672">.&lt;/span>date(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>assign(revenue&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[&lt;span style="color:#e6db74">&amp;#34;l_extendedprice&amp;#34;&lt;/span>] &lt;span style="color:#f92672">*&lt;/span> (&lt;span style="color:#ae81ff">1&lt;/span> &lt;span style="color:#f92672">-&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;l_discount&amp;#34;&lt;/span>]))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby([&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>], as_index&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>agg({&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;sum&amp;#34;&lt;/span>})[[&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>sort_values([&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>], ascending&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#66d9ef">False&lt;/span>, &lt;span style="color:#66d9ef">True&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>reset_index(drop&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">10&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>to_parquet(&lt;span style="color:#e6db74">&amp;#34;result.parquet&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The above implementation doesn&amp;rsquo;t take care of the &amp;ldquo;best practices&amp;rdquo;.
+It loads the entire data from all the three tables and directly merge them to construct a large table
+before performing rest of the filter, groupby etc. operations as required for the query.&lt;/p>
+&lt;p>When we executed the above program in pandas, it &lt;strong>took around 203 seconds and the memory consumption was around 60 GB&lt;/strong>.
+&lt;img src="q3_pandas.png" alt="pandas q3 metrics">&lt;/p>
+&lt;p>Let&amp;rsquo;s now implement the best-practices discussed in the previous section to manually optimize the query as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">optimized_q3&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># load only required columns from respective tables&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> req_customer_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;c_custkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;c_mktsegment&amp;#34;&lt;/span>] &lt;span style="color:#75715e"># (2/8)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> req_lineitem_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_shipdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_extendedprice&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;l_discount&amp;#34;&lt;/span>] &lt;span style="color:#75715e">#(4/16)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> req_orders_cols &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;o_custkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>] &lt;span style="color:#75715e">#(4/9)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> customer &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;customer.parquet&amp;#34;&lt;/span>, columns &lt;span style="color:#f92672">=&lt;/span> req_customer_cols)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> lineitem &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;lineitem.parquet&amp;#34;&lt;/span>, columns &lt;span style="color:#f92672">=&lt;/span> req_lineitem_cols)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> orders &lt;span style="color:#f92672">=&lt;/span> pd&lt;span style="color:#f92672">.&lt;/span>read_parquet(&lt;span style="color:#e6db74">&amp;#34;orders.parquet&amp;#34;&lt;/span>, columns &lt;span style="color:#f92672">=&lt;/span> req_orders_cols)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># advanced-filter: to reduce scope of “customer” table to be processed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> f_cust &lt;span style="color:#f92672">=&lt;/span> customer[customer[&lt;span style="color:#e6db74">&amp;#34;c_mktsegment&amp;#34;&lt;/span>] &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;BUILDING&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># advanced-filter: to reduce scope of “orders” table to be processed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> f_ord &lt;span style="color:#f92672">=&lt;/span> orders[orders[&lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;lt;&lt;/span> datetime&lt;span style="color:#f92672">.&lt;/span>date(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># advanced-filter: to reduce scope of “lineitem” table to be processed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> f_litem &lt;span style="color:#f92672">=&lt;/span> lineitem[lineitem[&lt;span style="color:#e6db74">&amp;#34;l_shipdate&amp;#34;&lt;/span>] &lt;span style="color:#f92672">&amp;gt;&lt;/span> datetime&lt;span style="color:#f92672">.&lt;/span>date(&lt;span style="color:#ae81ff">1995&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">15&lt;/span>)]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> f_cust&lt;span style="color:#f92672">.&lt;/span>merge(f_ord, left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;c_custkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_custkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>merge(f_litem, left_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;o_orderkey&amp;#34;&lt;/span>, right_on&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>assign(revenue&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">lambda&lt;/span> df: df[&lt;span style="color:#e6db74">&amp;#34;l_extendedprice&amp;#34;&lt;/span>] &lt;span style="color:#f92672">*&lt;/span> (&lt;span style="color:#ae81ff">1&lt;/span> &lt;span style="color:#f92672">-&lt;/span> df[&lt;span style="color:#e6db74">&amp;#34;l_discount&amp;#34;&lt;/span>]))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>groupby([&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>], as_index&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>agg({&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;sum&amp;#34;&lt;/span>})[[&lt;span style="color:#e6db74">&amp;#34;l_orderkey&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_shippriority&amp;#34;&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>sort_values([&lt;span style="color:#e6db74">&amp;#34;revenue&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;o_orderdate&amp;#34;&lt;/span>], ascending&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#66d9ef">False&lt;/span>, &lt;span style="color:#66d9ef">True&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>reset_index(drop&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>head(&lt;span style="color:#ae81ff">10&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">.&lt;/span>to_parquet(&lt;span style="color:#e6db74">&amp;#34;result.parquet&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Instead of loading all the 8 columns from the &lt;code>customer&lt;/code> table,
+all the 16 columns from the &lt;code>lineitem&lt;/code> table,
+and all the 9 columns from the &lt;code>orders&lt;/code> table,
+it loads only the target columns that would be required to implement the query
+by reducing the data in the horizontal direction (applying projection pushdown).&lt;/p>
+&lt;p>Also, since we need only a specific rows from these tables based on the given conditions,
+we performed an early filtration on the loaded data to reduce it further in the vertical direction (applying predicate pushdown).&lt;/p>
+&lt;p>When we executed the above optimized implementation using pandas, it &lt;strong>took around 13 seconds and the memory consumption was around 5.5 GB&lt;/strong>.
+&lt;img src="opt_q3_pandas.png" alt="pandas optimized-q3 metrics">&lt;/p>
+&lt;p>From this experiment, it is quite evident that an optimized implementation of a pandas program
+can itself improve its performance and memory consumption to a great extent.&lt;/p>
+&lt;p>👉 &lt;strong>Q. Can we automate such optimization such that one can focus more on in-depth data analysis relying on some tool or library for such expert-level optimization?&lt;/strong>&lt;/p>
+&lt;p>The answer is &lt;strong>&amp;ldquo;YES&amp;rdquo;&lt;/strong>. You can rely on FireDucks for such optimization for sure. 🚀&lt;/p>
+&lt;h2 id="fireducks-offerings">FireDucks Offerings&lt;/h2>
+&lt;p>While being highly compatible with pandas,
+FireDucks can perform such expert-level optimization automatically when using its default lazy execution mode.&lt;/p>
+&lt;p>In order to verify the same, we have executed the methods as follows:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># to use FireDucks for all the processings&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> fireducks.pandas &lt;span style="color:#66d9ef">as&lt;/span> pd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>q3()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>optimized_q3()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>And the execution could be completed within 4-5 seconds for both these cases showing FireDucks strength
+in performing such optimizations automatically even when the program itself doesn&amp;rsquo;t take care of it (as in q3).&lt;/p>
+&lt;p>We have used &lt;code>v2-8 TPU&lt;/code> instance from Google Colab for this evaluation and here is the finding in detail:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:left">&lt;/th>
+&lt;th style="text-align:right">(pandas, exec_time (s))&lt;/th>
+&lt;th style="text-align:right">(pandas, memory (GB))&lt;/th>
+&lt;th style="text-align:right">(FireDucks, exec_time (s))&lt;/th>
+&lt;th style="text-align:right">(FireDucks, memory (GB))&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:left">q3&lt;/td>
+&lt;td style="text-align:right">203.18&lt;/td>
+&lt;td style="text-align:right">60&lt;/td>
+&lt;td style="text-align:right">4.24&lt;/td>
+&lt;td style="text-align:right">3.3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">optimized_q3&lt;/td>
+&lt;td style="text-align:right">12.97&lt;/td>
+&lt;td style="text-align:right">5.5&lt;/td>
+&lt;td style="text-align:right">4.81&lt;/td>
+&lt;td style="text-align:right">3.4&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>You might like to try this &lt;a href="https://colab.research.google.com/github/fireducks-dev/fireducks/blob/main/notebooks/tpch-query3-pandas-fireducks-cudf.ipynb">notebook&lt;/a>
+on Google colab to reproduce the same.&lt;/p>
+&lt;h2 id="wrapping-up">Wrapping-up&lt;/h2>
+&lt;p>Thank you for your time in reading this article.
+We have discussed a couple of best practices that one should follow when performing large-scale data analysis in pandas
+and how FireDucks can automatically implement the same. The experimental result shows when switching from pandas to FireDucks,
+it can improve performance of a poorly written program by 48x (203.18s -&amp;gt; 4.24s)
+while reducing the memory consumption by 18x (60 GB -&amp;gt; 3.3 GB).&lt;/p>
+&lt;p>In case you have any queries or have an issue to report,
+please feel free to get in touch with us in any of your prefered channel mentioned below:&lt;/p>
+&lt;ul>
+&lt;li>🦆github : &lt;a href="https://github.com/fireducks-dev/fireducks/issues/new">https://github.com/fireducks-dev/fireducks/issues/new&lt;/a>&lt;/li>
+&lt;li>📧mail : &lt;a href="mailto:contact@fireducks.jp.nec.com">contact@fireducks.jp.nec.com&lt;/a>&lt;/li>
+&lt;li>🤝slack : &lt;a href="https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w">https://join.slack.com/t/fireducks/shared_invite/zt-2j4lucmtj-IGR7AWlXO62Lu605pnBJ2w&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Posts: Pitfalls of Time Measurement for FireDucks with %%time in Notebooks</title><link>https://fireducks-dev.github.io/posts/2024-12-26-time-pitfalls/</link><pubDate>Thu, 26 Dec 2024 09:35:10 +0900</pubDate><guid>https://fireducks-dev.github.io/posts/2024-12-26-time-pitfalls/</guid><description>
 &lt;p>This is Osamu Daido from the FireDucks development team. In today's developers' blog, I would like to present a subtle pitfall in time measurement.&lt;/p>
 &lt;h2 id="quick-overview">Quick Overview&lt;/h2>
 &lt;p>When measuring the execution time of FireDucks using the &lt;code>%%time&lt;/code> magic command in IPython Notebooks, make sure to always call the &lt;code>_evaluate()&lt;/code> method of DataFrames or Series to ensure proper evaluation!&lt;/p>
