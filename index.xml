@@ -95,7 +95,8 @@ namely &lt;code>lineitem&lt;/code>, &lt;code>customer&lt;/code>, and &lt;code>or
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The above implementation doesn&amp;rsquo;t take care of the &amp;ldquo;best practices&amp;rdquo;.
 It loads the entire data from all the three tables and directly merge them to construct a large table
 before performing rest of the filter, groupby etc. operations as required for the query.&lt;/p>
-&lt;p>When we executed the above program in pandas, it &lt;strong>took around 203 seconds and the memory consumption was around 60 GB&lt;/strong>.
+&lt;p>When we executed the above program in pandas for a scale-factor 10,
+it &lt;strong>took around 203 seconds and the peak memory consumption was around 56 GB&lt;/strong>.
 &lt;img src="q3_pandas.png" alt="pandas q3 metrics">&lt;/p>
 &lt;p>Let&amp;rsquo;s now implement the best-practices discussed in the previous section to manually optimize the query as follows:&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">optimized_q3&lt;/span>():
@@ -134,7 +135,8 @@ it loads only the target columns that would be required to implement the query
 by reducing the data in the horizontal direction (applying projection pushdown).&lt;/p>
 &lt;p>Also, since we need only a specific rows from these tables based on the given conditions,
 we performed an early filtration on the loaded data to reduce it further in the vertical direction (applying predicate pushdown).&lt;/p>
-&lt;p>When we executed the above optimized implementation using pandas, it &lt;strong>took around 13 seconds and the memory consumption was around 5.5 GB&lt;/strong>.
+&lt;p>When we executed the above optimized implementation using pandas for a scale-factor 10,
+it &lt;strong>took around 13 seconds and the peak memory consumption was around 5.5 GB&lt;/strong>.
 &lt;img src="opt_q3_pandas.png" alt="pandas optimized-q3 metrics">&lt;/p>
 &lt;p>From this experiment, it is quite evident that an optimized implementation of a pandas program
 can itself improve its performance and memory consumption to a great extent.&lt;/p>
@@ -166,7 +168,7 @@ in performing such optimizations automatically even when the program itself does
 &lt;tr>
 &lt;td style="text-align:left">q3&lt;/td>
 &lt;td style="text-align:right">203.18&lt;/td>
-&lt;td style="text-align:right">60&lt;/td>
+&lt;td style="text-align:right">56&lt;/td>
 &lt;td style="text-align:right">4.24&lt;/td>
 &lt;td style="text-align:right">3.3&lt;/td>
 &lt;/tr>
@@ -185,8 +187,8 @@ on Google colab to reproduce the same.&lt;/p>
 &lt;p>Thank you for your time in reading this article.
 We have discussed a couple of best practices that one should follow when performing large-scale data analysis in pandas
 and how FireDucks can automatically implement the same. The experimental result shows when switching from pandas to FireDucks,
-it can improve performance of a poorly written program by 48x (203.18s -&amp;gt; 4.24s)
-while reducing the memory consumption by 18x (60 GB -&amp;gt; 3.3 GB).&lt;/p>
+it can improve performance of a poorly written program by 48x (203.18 s -&amp;gt; 4.24 s)
+while reducing the memory consumption by 17x (56 GB -&amp;gt; 3.3 GB).&lt;/p>
 &lt;p>In case you have any queries or have an issue to report,
 please feel free to get in touch with us in any of your prefered channel mentioned below:&lt;/p>
 &lt;ul>
