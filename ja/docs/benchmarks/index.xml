@@ -1,4 +1,52 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FireDucks – Benchmarks</title><link>https://fireducks-dev.github.io/ja/docs/benchmarks/</link><description>Recent content in Benchmarks on FireDucks</description><generator>Hugo -- gohugo.io</generator><language>ja</language><lastBuildDate>Wed, 05 Jun 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://fireducks-dev.github.io/ja/docs/benchmarks/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Benchmark Archive</title><link>https://fireducks-dev.github.io/ja/docs/benchmarks/archive/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fireducks-dev.github.io/ja/docs/benchmarks/archive/</guid><description>
+&lt;h2 id="20250204">2025/02/04&lt;/h2>
+&lt;p>サーバースペック&lt;/p>
+&lt;ul>
+&lt;li>cpu: INTEL(R) XEON(R) GOLD 6526Y (32cores)&lt;/li>
+&lt;li>main memory: 512GB&lt;/li>
+&lt;li>cpufreq-governor: powersave&lt;/li>
+&lt;/ul>
+&lt;p>&lt;a href="https://github.com/fireducks-dev/polars-tpch/tree/fireducks_20250204">ベンチマークのソースコード&lt;/a>&lt;/p>
+&lt;p>以下のグラフは&lt;a href="https://www.tpc.org/tpch/">TPC-H&lt;/a>ベンチマークに含まれる22種類のクエリでの4つのデータフレームライブラリ（&lt;a href="https://pandas.pydata.org/">pandas&lt;/a>,
+&lt;a href="https://duckdb.org/">DuckDB&lt;/a>, &lt;a href="https://pola.rs/">Polars&lt;/a>,
+FireDucks）の比較を示しています．縦軸はpandasに対して何倍速いか（実行時間が短いか）を対数軸で示しています．1より大きい場合はpandasより速いことを示しています．データサイズを表すScale
+Factorは10（約10GB程度のデータセット）で，ファイルIO以外の時間（RUN_IO_TYPE=skip, 上図）とファイルIOを含んだ時間（RUN_IO_TYPE=parquet, 下図）を測定しています．&lt;/p>
+&lt;p>22クエリの平均でのpandasからの速度向上:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th style="text-align:center">Excluding I/O&lt;/th>
+&lt;th style="text-align:center">Including I/O&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>DuckDB&lt;/td>
+&lt;td style="text-align:center">63x&lt;/td>
+&lt;td style="text-align:center">&lt;strong>43x&lt;/strong>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>Polars&lt;/td>
+&lt;td style="text-align:center">39x&lt;/td>
+&lt;td style="text-align:center">32x&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>FireDucks&lt;/td>
+&lt;td style="text-align:center">&lt;strong>78x&lt;/strong>&lt;/td>
+&lt;td style="text-align:center">38x&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="io以外の時間でのpandasからの速度向上">I/O以外の時間でのpandasからの速度向上&lt;/h3>
+&lt;p>&lt;img src="polars-tpch-sf10-skip_20250214.webp" alt="polars-tpch-sf10-skip">&lt;/p>
+&lt;h3 id="ioを含んだ時間でのpandasからの速度向上">I/Oを含んだ時間でのpandasからの速度向上&lt;/h3>
+&lt;p>&lt;img src="polars-tpch-sf10-parquet_20250214.webp" alt="polars-tpch-sf10-parquet">&lt;/p>
+&lt;h3 id="ベンチマークコードについて">ベンチマークコードについて&lt;/h3>
+&lt;p>このベンチマークは&lt;a href="https://github.com/pola-rs/tpch">polars/tpch&lt;/a>をベースにしています．polars/tpchはpolars向けには全22クエリがありますが，pandas向けには一部しかありませんでしたので，今回はFireDucks開発チームでpandasを用いてクエリを実装し，それを&lt;a href="https://fireducks-dev.github.io/ja/docs/get-started/#import-hook">import
+hook&lt;/a>を用いてFireDucksで動かしました．
+Polarsとその他のライブラリのapple-to-appleの比較となるように，これらのクエリはできる限りpolarsのクエリと同じ実装としてあります．
+PolarsとpandasはAPIが違いますのでコードは完全には一致しませんが，merge/join, filter, groupbyと言ったコストがかかる処理の数は可能な限り同じにしてあります．&lt;/p>
 &lt;h2 id="2024-12-06">2024-12-06&lt;/h2>
 &lt;h3 id="tpc-hを用いたデータフレームライブラリの比較">TPC-Hを用いたデータフレームライブラリの比較&lt;/h3>
 &lt;p>&lt;a href="https://github.com/fireducks-dev/polars-tpch/tree/fireducks_20241206">ベンチマークのソースコード&lt;/a>&lt;/p>
@@ -20,7 +68,7 @@ Factorは10（約10GB程度のデータセット）で，ファイルIO以外の
 &lt;li>CPU: Intel(R) Xeon(R) Platinum 8488C (32cores)&lt;/li>
 &lt;li>メインメモリ: 128GB&lt;/li>
 &lt;/ul>
-&lt;h3 id="ベンチマークコードについて">ベンチマークコードについて&lt;/h3>
+&lt;h3 id="ベンチマークコードについて-1">ベンチマークコードについて&lt;/h3>
 &lt;p>このベンチマークは&lt;a href="https://github.com/pola-rs/tpch">polars/tpch&lt;/a>をベースにしています．polars/tpchはpolars向けには全22クエリがありますが，pandas向けには一部しかありませんでしたので，今回はFireDucks開発チームでpandasを用いてクエリを実装し，それを&lt;a href="https://fireducks-dev.github.io/ja/docs/get-started/#import-hook">import
 hook&lt;/a>を用いてFireDucksで動かしました．
 Polarsとその他のライブラリのapple-to-appleの比較となるように，これらのクエリはできる限りpolarsのクエリと同じ実装としてあります．
@@ -69,7 +117,7 @@ Factorは10（約10GB程度のデータセット）で，ファイルIO以外の
 &lt;/ul>
 &lt;p>次にScalar Factor(sf)を10, 20, 50にしてデータサイズを大きくした場合にPolarsとFireDucksの比較結果を示します．縦軸はPolarsに対してFireDucksが何倍速いかを示しています．平均では&lt;strong>FireDucksが1.7倍(sf=10), 1.7倍(sf=20), 1.8倍(sf=50)高速&lt;/strong>となっています．&lt;/p>
 &lt;p>&lt;img src="../20240605/polars-tpch_20240605.webp" alt="polars-tpch">&lt;/p>
-&lt;h3 id="ベンチマークコードについて-1">ベンチマークコードについて&lt;/h3>
+&lt;h3 id="ベンチマークコードについて-2">ベンチマークコードについて&lt;/h3>
 &lt;p>このベンチマークは&lt;a href="https://github.com/pola-rs/tpch">polars/tpch&lt;/a>をベースにしています．polars/tpchはpolars向けには全22クエリがありますが，pandasやmodin向けには一部しかありませんでしたので，今回はFireDucks開発チームでpandasを用いてクエリを実装し，それを&lt;a href="https://fireducks-dev.github.io/ja/docs/get-started/#import-hook">import
 hook&lt;/a>を用いてFireDucksで動かしました．これらのクエリは，pandasやmodinで動かす際にも
 利用しました．&lt;/p>
@@ -97,7 +145,7 @@ Factorは10（約10GB程度のデータセット）で，ファイルIO以外の
 &lt;/ul>
 &lt;p>次にScalar Factor(sf)を10, 20, 50にしてデータサイズを大きくした場合にPolarsとFireDucksの比較結果を示します．縦軸はPolarsに対してFireDucksが何倍速いかを示しています．平均ではFireDucksが1.3倍(sf=10), 1.3倍(sf=20), 1.7倍(sf=50)高速となっています．&lt;/p>
 &lt;p>&lt;img src="../20240206/polars-tpch_20240206.webp" alt="polars-tpch">&lt;/p>
-&lt;h3 id="ベンチマークコードについて-2">ベンチマークコードについて&lt;/h3>
+&lt;h3 id="ベンチマークコードについて-3">ベンチマークコードについて&lt;/h3>
 &lt;p>このベンチマークは&lt;a href="https://github.com/pola-rs/tpch">polars/tpch&lt;/a>をベースにしています．polars/tpchはpolars向けには全22クエリがありますが，pandasやmodin向けには一部しかありませんでしたので，今回はFireDucks開発チームでpandasを用いてクエリを実装し，それを&lt;a href="https://fireducks-dev.github.io/ja/docs/get-started/#import-hook">import hook&lt;/a>を用いてFireDucksで動かしました．これらのクエリは，pandasやmodinで動かす際にも
 polars/tpchが提供してないクエリに利用しました．&lt;/p>
 &lt;p>各クエリのソースコードは&lt;a href="https://github.com/fireducks-dev/polars-tpch/tree/fireducks">こちら&lt;/a>で公開しています．&lt;/p></description></item></channel></rss>
