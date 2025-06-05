@@ -12,7 +12,7 @@
 &lt;/li>
 &lt;li>対応プラットフォームについて
 &lt;ul>
-&lt;li>現在のところ対応しているプラットフォームはx86_64アーキテクチャ上のLinux（&lt;code>manylinux&lt;/code>）です．
+&lt;li>現在のところ対応しているプラットフォームはx86_64アーキテクチャ上のLinux（&lt;code>manylinux&lt;/code>）とARMアーキテクチャ上のMacOSです．
 &lt;ul>
 &lt;li>ご参考: &lt;a href="https://note.com/fireducks/n/nb5cabbe9236e">Windows上のWSLでLinuxを動かす記事&lt;/a>&lt;/li>
 &lt;/ul>

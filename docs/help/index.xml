@@ -12,7 +12,7 @@
 &lt;/li>
 &lt;li>About supported platforms
 &lt;ul>
-&lt;li>FireDucks is currently available for Linux (&lt;code>manylinux&lt;/code>) on the x86_64 architecture.&lt;/li>
+&lt;li>FireDucks is currently available for Linux (&lt;code>manylinux&lt;/code>) on the x86_64 architecture and MacOS on the ARM architecture.&lt;/li>
 &lt;li>We will support Windows etc. if many requests.&lt;/li>
 &lt;/ul>
 &lt;/li>

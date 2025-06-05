@@ -188,7 +188,7 @@ Hence you can &lt;strong>safely ignore the warning message&lt;/strong>, when usi
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time() &lt;span style="color:#75715e"># end of time measurement&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="api-for-feature-generation">API for feature generation&lt;/h3>
 &lt;p>One of the applications of data frames is feature generation, which is a pre-processing step in machine learning. In feature generation, data frames are processed in various ways to generate features for training in order to create better models, which can be very time-consuming.&lt;/p>
-&lt;p>FireDucks also provides an API for fast feature generation. Currently, the following two features are typical feature generation methods. These features can be implemented using a combination of pandas APIs, but FireDucks provides them as APIs, and they are preoptimized to be fast, just as the FireDucks compiler does. See the API Doc for details on each API.&lt;/p>
+&lt;p>FireDucks also provides an API for fast feature generation. Currently, the following two features are typical feature generation methods. These features can be implemented using a combination of pandas APIs, but FireDucks provides them as APIs, and they are preoptimized to be fast, just as the FireDucks compiler does.&lt;/p>
 &lt;ul>
 &lt;li>Aggregate features: &lt;code>fireducks.pandas.aggregate&lt;/code>&lt;/li>
 &lt;li>multi-target encoding: &lt;code>fireducks.pandas.multi_target_encoding&lt;/code>&lt;/li>
@@ -530,7 +530,7 @@ most understandable format (with the best usage of the APIs), the benchmark can 
 &lt;/li>
 &lt;li>About supported platforms
 &lt;ul>
-&lt;li>FireDucks is currently available for Linux (&lt;code>manylinux&lt;/code>) on the x86_64 architecture.&lt;/li>
+&lt;li>FireDucks is currently available for Linux (&lt;code>manylinux&lt;/code>) on the x86_64 architecture and MacOS on the ARM architecture.&lt;/li>
 &lt;li>We will support Windows etc. if many requests.&lt;/li>
 &lt;/ul>
 &lt;/li>

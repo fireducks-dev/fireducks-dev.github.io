@@ -137,7 +137,7 @@
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>t1 &lt;span style="color:#f92672">=&lt;/span> time&lt;span style="color:#f92672">.&lt;/span>time() &lt;span style="color:#75715e"># 時間計測終了&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="特徴量生成用api">特徴量生成用API&lt;/h3>
 &lt;p>データフレームの用途のひとつとして，機械学習の前処理である特徴量生成が挙げられます．より良いモデルを作成するには，往々にして，データフレームを様々な方法で加工して学習用の特徴量を生成する必要があり，処理時間が非常に長くなる場合があります．&lt;/p>
-&lt;p>FireDucksは特徴量生成を高速に行うためのAPIも提供しています．現在は代表的な特徴量生成手法である以下のふたつの機能があります．これらの機能はpandasのAPIを組み合わせて実装することができますが，FireDucksでは単一のAPIとして提供されており，独自のチューニングがあらかじめ施されているため高速です．各APIの詳細はAPI Docを参照してください．&lt;/p>
+&lt;p>FireDucksは特徴量生成を高速に行うためのAPIも提供しています．現在は代表的な特徴量生成手法である以下のふたつの機能があります．これらの機能はpandasのAPIを組み合わせて実装することができますが，FireDucksでは単一のAPIとして提供されており，独自のチューニングがあらかじめ施されているため高速です．&lt;/p>
 &lt;ul>
 &lt;li>集約特徴量: &lt;code>fireducks.pandas.aggregate&lt;/code>&lt;/li>
 &lt;li>マルチターゲットエンコーディング: &lt;code>fireducks.pandas.multi_target_encoding&lt;/code>&lt;/li>
